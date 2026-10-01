@@ -35,6 +35,13 @@ SPECIALTY_VOCABULARIES = {
         "asthma", "wheezing", "copd", "bronchospasm", "albuterol", "fluticasone",
         "spirometry", "fev1", "hypoxia", "cough", "sputum", "pneumonia", "bronchial",
         "inhaler", "dyspnea", "respiratory", "pulmonary", "crackles", "stridor"
+    ],
+    "Pathology": [
+        "pathology", "laboratory", "specimen", "venous blood", "cbc", "hematology",
+        "hemoglobin", "hematocrit", "wbc", "platelets", "lipid", "cholesterol",
+        "triglycerides", "ldl", "hdl", "creatinine", "bun", "sodium", "potassium",
+        "metabolic panel", "troponin", "blood chemistry", "reference range", "normocytic",
+        "dyslipidemia", "hypercholesterolemia", "pathologist"
     ]
 }
 

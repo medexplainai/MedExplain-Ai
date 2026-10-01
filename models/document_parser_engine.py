@@ -36,6 +36,52 @@ class DocumentParserEngine:
     def __init__(self):
         pass
 
+    def is_valid_medical_document(self, text: str) -> tuple[bool, str]:
+        """
+        Validates whether uploaded text constitutes a genuine clinical/medical document.
+        Returns (is_valid, rejection_reason).
+        """
+        clean = text.strip()
+        if len(clean) < 35:
+            return False, "Document text is too brief or empty. A valid clinical document, discharge summary, or laboratory report is required."
+
+        lower = clean.lower()
+
+        # Non-medical document patterns
+        code_patterns = ["import react", "const [", "def __init__", "class ", "function()", "<!doctype html", "public static void", "select * from"]
+        if sum(1 for p in code_patterns if p in lower) >= 2:
+            return False, "Uploaded file appears to be software source code rather than a clinical record."
+
+        resume_patterns = ["curriculum vitae", "work experience", "education:", "projects:", "hobbies:", "b.tech", "cgpa:", "technical skills:"]
+        if sum(1 for p in resume_patterns if p in lower) >= 3 and not any(k in lower for k in ["patient", "diagnosis", "discharge", "prescription"]):
+            return False, "Uploaded file appears to be a curriculum vitae / resume, not a clinical healthcare record."
+
+        financial_patterns = ["tax invoice", "invoice #", "subtotal:", "gstin", "shipping address", "purchase order", "amount due:"]
+        if sum(1 for p in financial_patterns if p in lower) >= 2 and not any(k in lower for k in ["patient", "diagnosis", "hospital", "laboratory"]):
+            return False, "Uploaded file appears to be a commercial or financial invoice, not a medical record."
+
+        # Medical vocabulary check
+        medical_markers = [
+            "patient", "clinical", "diagnosis", "doctor", "physician", "hospital", "admission",
+            "discharge", "treatment", "medication", "dose", "tablet", "blood", "pressure", "heart",
+            "cardiac", "pulmonary", "respiratory", "glucose", "diabetes", "mri", "ct scan", "x-ray",
+            "surgery", "pathology", "laboratory", "specimen", "exam", "symptoms", "prescription",
+            "vitals", "cbc", "ecg", "troponin", "artery", "syndrome", "acute", "chronic", "edema",
+            "pain", "mg", "tablet", "daily", "infection", "biopsy", "renal", "hepatic", "neurology",
+            "orthopedic", "stenosis", "stent", "infarction", "stroke", "meniscus", "hemiparesis",
+            "findings:", "impression:", "reference range", "hba1c", "cholesterol", "platelets"
+        ]
+
+        matched_markers = [m for m in medical_markers if m in lower]
+        if len(matched_markers) < 2:
+            return False, (
+                "No recognizable clinical markers, EHR headers, laboratory analytes, or medical diagnostic terms "
+                "were identified in this document. MedExplain AI only processes Clinical Notes, Discharge Summaries, "
+                "Laboratory Reports (CBC, CMP, Lipid), Radiology Imaging Scans (CT, MRI, X-Ray), or Prescriptions."
+            )
+
+        return True, "Valid clinical document."
+
     def detect_document_type(self, text: str) -> str:
         """
         Classifies incoming medical text into one of 4 primary clinical document archetypes.

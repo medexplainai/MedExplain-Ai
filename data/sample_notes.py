@@ -94,7 +94,7 @@ SAMPLE_CLINICAL_NOTES = {
         )
     },
     "Diagnostic Laboratory Report: Blood & Metabolic Panel": {
-        "specialty": "Endocrinology",
+        "specialty": "Pathology",
         "patient_name": "Raymond Ortiz",
         "patient_id": "PT-2026-3392",
         "age": 54,

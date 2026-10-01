@@ -17,6 +17,66 @@ import {
   ShieldCheck
 } from 'lucide-react';
 
+function renderCleanOverview(text) {
+  if (!text) return null;
+  const blocks = text.split(/\n\s*\n/).filter(b => b.trim());
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      {blocks.map((block, idx) => {
+        const trimmed = block.trim();
+        const matchHeading = trimmed.match(/^\*\*(.*?)\*\*\s*(?:\n+)?([\s\S]*)$/);
+        if (matchHeading) {
+          const heading = matchHeading[1].replace(/\*\*/g, '').trim();
+          const body = matchHeading[2].replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*\*/g, '').trim();
+          return (
+            <div key={idx} style={{
+              background: '#ffffff',
+              borderRadius: '10px',
+              border: '1px solid #d1fae5',
+              padding: '14px 18px',
+              boxShadow: '0 2px 6px rgba(16, 185, 129, 0.05)'
+            }}>
+              <div style={{
+                fontSize: '14px',
+                fontWeight: 800,
+                color: '#065f46',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: body ? '8px' : '0'
+              }}>
+                <Sparkles size={15} color="#059669" />
+                <span>{heading}</span>
+              </div>
+              {body && (
+                <p style={{ fontSize: '13.5px', lineHeight: '1.8', color: '#334155', margin: 0 }}>
+                  {body}
+                </p>
+              )}
+            </div>
+          );
+        }
+
+        const cleanText = trimmed.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*\*/g, '');
+        return (
+          <div key={idx} style={{
+            background: '#ffffff',
+            borderRadius: '10px',
+            border: '1px solid #e2e8f0',
+            padding: '14px 18px',
+            fontSize: '13.5px',
+            lineHeight: '1.8',
+            color: '#334155'
+          }}>
+            {cleanText}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function PatientCarePortal({ summary, onDownloadDocx }) {
   if (!summary) return null;
 
@@ -66,14 +126,7 @@ export default function PatientCarePortal({ summary, onDownloadDocx }) {
           </div>
         </div>
         <div className="card-body">
-          <p style={{
-            fontSize: '14.5px',
-            lineHeight: '1.8',
-            color: '#1e293b',
-            whiteSpace: 'pre-line'
-          }}>
-            {overview}
-          </p>
+          {renderCleanOverview(overview)}
         </div>
       </div>
 

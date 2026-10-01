@@ -62,12 +62,7 @@ class ExplainabilityEngine:
                 html_spans.append(token)
 
         heatmap_html = "".join(html_spans)
-        # Wrap in styled container
-        return f"""
-        <div style="font-family: 'Segoe UI', Arial, sans-serif; font-size: 13.5px; line-height: 1.6; color: #1e293b; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; white-space: pre-wrap; word-break: break-word; max-height: 380px; overflow-y: auto;">
-            {heatmap_html}
-        </div>
-        """
+        return f'<div class="shap-heatmap-content" style="line-height: 1.85; font-size: 13.5px; color: #1e293b; white-space: pre-wrap; word-break: break-word;">{heatmap_html}</div>'
 
     def get_top_driving_keywords(self, text: str, predicted_specialty: str, top_k: int = 8) -> List[Dict[str, Any]]:
         """

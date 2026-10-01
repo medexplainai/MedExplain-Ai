@@ -94,6 +94,7 @@ def analyze_medical_document(req: AnalyzeRequest):
 
     # 3. Explainability Heatmap (SHAP Attribution)
     heatmap_html = explainability_engine.generate_html_heatmap(clinical_text, top_spec)
+    top_keywords = explainability_engine.get_top_driving_keywords(clinical_text, top_spec)
 
     # 4. Patient Layman Summarization (NVIDIA NIM Accelerated)
     summary_data = summarizer_engine.generate_summary_with_api(clinical_text, top_spec)
@@ -116,6 +117,7 @@ def analyze_medical_document(req: AnalyzeRequest):
         "classification": classification,
         "entities": entities,
         "heatmap_html": heatmap_html,
+        "top_driving_keywords": top_keywords,
         "summary": summary_data,
         "fact_checking": fact_report,
         "lab_results": labs_parsed,
@@ -156,6 +158,19 @@ async def upload_document(file: UploadFile = File(...)):
             f"[SCANNED DOCUMENT INGESTED: {file.filename}]\n"
             "Diagnostic Optical Character Recognition performed on medical report scan.\n"
             "Clinical evaluation indicates cardiac enzymes and lipid profile workup requested."
+        )
+
+    # Clinical Medical Document Validation Guardrail
+    is_valid, reason = document_parser_engine.is_valid_medical_document(extracted_text)
+    if not is_valid:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "NON_MEDICAL_DOCUMENT",
+                "title": "Uploaded Document Cannot Be Processed",
+                "reason": reason,
+                "filename": file.filename
+            }
         )
 
     # Run complete analysis
