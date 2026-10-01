@@ -59,6 +59,13 @@ SAMPLE_CLINICAL_NOTES = {
     },
     "Orthopedics: Right Knee Meniscal Tear": {
         "specialty": "Orthopedics",
+        "patient_name": "David Miller",
+        "patient_id": "PT-2026-5512",
+        "age": 42,
+        "gender": "Male",
+        "room": "Ortho Ward - Bed 308A",
+        "triage": "Post-Operative Recovery",
+        "ward": "Orthopedic Surgical Care",
         "chief_complaint": "Persistent right knee pain with mechanical locking and joint effusion.",
         "text": (
             "OPERATIVE REPORT & POST-OPERATIVE DISCHARGE SUMMARY\n"
@@ -76,6 +83,13 @@ SAMPLE_CLINICAL_NOTES = {
     },
     "Endocrinology: Type 2 Diabetes with Neuropathy": {
         "specialty": "Endocrinology",
+        "patient_name": "Maria Gonzalez",
+        "patient_id": "PT-2026-4421",
+        "age": 51,
+        "gender": "Female",
+        "room": "Metabolic Suite - Bed 112C",
+        "triage": "Subacute Glycemic Triage",
+        "ward": "Endocrine & Metabolic Care",
         "chief_complaint": "Uncontrolled hyperglycemia with bilateral distal lower extremity paresthesias.",
         "text": (
             "CLINICAL CONSULTATION & MANAGEMENT SUMMARY\n"

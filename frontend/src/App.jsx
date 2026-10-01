@@ -13,6 +13,9 @@ import NliSafetyAudit from './components/NliSafetyAudit';
 import CollegeTeamFooter from './components/CollegeTeamFooter';
 import ClinicalPipelineLoader from './components/ClinicalPipelineLoader';
 import ClinicalIntakeLanding from './components/ClinicalIntakeLanding';
+import AuthScreen from './components/AuthScreen';
+import DoctorPatientSearch from './components/DoctorPatientSearch';
+import PatientDashboardView from './components/PatientDashboardView';
 
 import {
   FileText,
@@ -36,6 +39,15 @@ import {
 } from 'lucide-react';
 
 export default function App() {
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('metrohealth_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
   const [samples, setSamples] = useState([]);
   const [selectedCaseTitle, setSelectedCaseTitle] = useState('');
   const [activeTab, setActiveTab] = useState('tab_diagnostics');
@@ -45,21 +57,77 @@ export default function App() {
   const [showAnatomyDiagram, setShowAnatomyDiagram] = useState(true);
   const [activeOrganId, setActiveOrganId] = useState('Cardiology');
   const [uploadError, setUploadError] = useState(null);
-  const [viewScreen, setViewScreen] = useState('landing'); // 'landing' | 'workstation'
+  const [viewScreen, setViewScreen] = useState('workstation'); // 'landing' | 'workstation'
 
-  // Initial load: Fetch samples without triggering heavy analysis on page load
+  const handleLogin = (user) => {
+    setCurrentUser(user);
+    try {
+      localStorage.setItem('metrohealth_user', JSON.stringify(user));
+    } catch {}
+
+    if (samples.length > 0) {
+      const matchedCase = samples.find(s => s.patient_name === user.name) || samples[0];
+      setSelectedCaseTitle(matchedCase.title);
+      setActiveOrganId(matchedCase.specialty || 'Cardiology');
+      analyzeText(matchedCase.text, {
+        name: matchedCase.patient_name || user.name,
+        id: matchedCase.patient_id || user.patientId,
+        age: matchedCase.age || user.age,
+        gender: matchedCase.gender || user.gender,
+        ward: matchedCase.ward || user.ward
+      });
+    }
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    try {
+      localStorage.removeItem('metrohealth_user');
+    } catch {}
+  };
+
+  // Initial load: Fetch samples and initialize default case
   useEffect(() => {
     async function loadInitial() {
       try {
         const resp = await fetch('/api/samples');
         const data = await resp.json();
-        setSamples(data.samples || []);
+        const sampleList = data.samples || [];
+        setSamples(sampleList);
+
+        if (sampleList.length > 0 && !analysisResult) {
+          const defaultCase = sampleList[0];
+          setSelectedCaseTitle(defaultCase.title);
+          setActiveOrganId(defaultCase.specialty || 'Cardiology');
+          analyzeText(defaultCase.text, {
+            name: defaultCase.patient_name || 'Marcus Vance',
+            id: defaultCase.patient_id || 'PT-2026-8841',
+            age: defaultCase.age || 58,
+            gender: defaultCase.gender || 'Male',
+            ward: defaultCase.ward || 'Coronary ICU'
+          });
+        }
       } catch (err) {
         console.error('Failed to load initial cases:', err);
       }
     }
     loadInitial();
   }, []);
+
+  const handleDoctorSelectPatient = (patient) => {
+    setViewScreen('workstation');
+    if (patient.specialty) {
+      setActiveOrganId(patient.specialty);
+    }
+    setSelectedCaseTitle(patient.title || `Patient Record: ${patient.patient_name}`);
+    analyzeText(patient.text, {
+      name: patient.patient_name,
+      id: patient.patient_id,
+      age: patient.age,
+      gender: patient.gender,
+      ward: patient.ward
+    });
+  };
 
   const analyzeText = async (text, patientMeta = {}) => {
     setIsAnalyzing(true);
@@ -216,6 +284,50 @@ export default function App() {
   const specialty = analysisResult?.classification?.top_specialty || activeOrganId || 'Cardiology';
   const isPreIngested = !selectedCaseTitle?.startsWith('Uploaded:') && selectedCaseTitle !== 'Custom Clinical Intake';
 
+  // 1. If not authenticated, render AuthScreen
+  if (!currentUser) {
+    return <AuthScreen onLogin={handleLogin} />;
+  }
+
+  // 2. If authenticated as Patient, render Patient Dashboard View
+  if (currentUser.role === 'patient') {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f8fafc' }}>
+        <Navbar
+          latencyMs={analysisResult?.processing_time_ms}
+          documentType={docType}
+          isAnalyzing={isAnalyzing}
+          currentUser={currentUser}
+          onLogout={handleLogout}
+        />
+        <main style={{ maxWidth: '1440px', width: '100%', margin: '0 auto', padding: '24px 28px', flex: 1 }}>
+          <PatientDashboardView
+            currentUser={currentUser}
+            analysisResult={analysisResult}
+            selectedCaseTitle={selectedCaseTitle}
+            onDownloadDocx={handleDownloadDocx}
+            onLogout={handleLogout}
+            samples={samples}
+            onSelectPatient={(pt) => {
+              setSelectedCaseTitle(pt.title);
+              if (pt.specialty) setActiveOrganId(pt.specialty);
+              analyzeText(pt.text, {
+                name: pt.patient_name,
+                id: pt.patient_id,
+                age: pt.age,
+                gender: pt.gender,
+                ward: pt.ward
+              });
+            }}
+          />
+          <CollegeTeamFooter />
+        </main>
+        <ClinicalPipelineLoader isAnalyzing={isAnalyzing} onComplete={() => {}} />
+      </div>
+    );
+  }
+
+  // 3. Authenticated as Doctor: Render Doctor Workstation with Patient Search
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f8fafc' }}>
       {/* Top Navbar */}
@@ -223,10 +335,20 @@ export default function App() {
         latencyMs={analysisResult?.processing_time_ms}
         documentType={docType}
         isAnalyzing={isAnalyzing}
+        currentUser={currentUser}
+        onLogout={handleLogout}
       />
 
       {/* Main Container */}
       <main style={{ maxWidth: '1440px', width: '100%', margin: '0 auto', padding: '24px 28px', flex: 1 }}>
+        {/* Doctor Patient Registry Search & Quick Report Fetcher */}
+        <DoctorPatientSearch
+          samples={samples}
+          activePatientName={analysisResult?.patient?.name || (samples.find(s => s.title === selectedCaseTitle)?.patient_name)}
+          onSelectPatient={handleDoctorSelectPatient}
+          isAnalyzing={isAnalyzing}
+        />
+
         {/* VIEW 1: Clinical Intake Landing Portal (When user first arrives) */}
         {viewScreen === 'landing' ? (
           <ClinicalIntakeLanding
