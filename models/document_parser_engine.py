@@ -42,25 +42,29 @@ class DocumentParserEngine:
         Returns (is_valid, rejection_reason).
         """
         clean = text.strip()
-        if len(clean) < 35:
-            return False, "Document text is too brief or empty. A valid clinical document, discharge summary, or laboratory report is required."
+        if len(clean) < 40:
+            return False, "Document text is too brief or empty. A genuine clinical discharge summary, laboratory report, or EHR record is required."
 
         lower = clean.lower()
 
-        # Non-medical document patterns
-        code_patterns = ["import react", "const [", "def __init__", "class ", "function()", "<!doctype html", "public static void", "select * from"]
+        # 1. Non-medical document heuristics (code, resumes, financial, general text)
+        code_patterns = ["import react", "const [", "def __init__", "class ", "function()", "<!doctype html", "public static void", "select * from", "npm install", "github.com", "export default"]
         if sum(1 for p in code_patterns if p in lower) >= 2:
-            return False, "Uploaded file appears to be software source code rather than a clinical record."
+            return False, "Uploaded file appears to be software source code or IT documentation rather than a clinical record."
 
-        resume_patterns = ["curriculum vitae", "work experience", "education:", "projects:", "hobbies:", "b.tech", "cgpa:", "technical skills:"]
-        if sum(1 for p in resume_patterns if p in lower) >= 3 and not any(k in lower for k in ["patient", "diagnosis", "discharge", "prescription"]):
-            return False, "Uploaded file appears to be a curriculum vitae / resume, not a clinical healthcare record."
+        resume_patterns = ["curriculum vitae", "work experience", "education:", "projects:", "hobbies:", "b.tech", "cgpa:", "technical skills:", "objective:", "linkedin:", "github.com/"]
+        if sum(1 for p in resume_patterns if p in lower) >= 2 and not any(k in lower for k in ["discharge diagnosis", "patient history", "prescription", "chief complaint"]):
+            return False, "Uploaded file appears to be a resume / curriculum vitae rather than a clinical healthcare record."
 
-        financial_patterns = ["tax invoice", "invoice #", "subtotal:", "gstin", "shipping address", "purchase order", "amount due:"]
-        if sum(1 for p in financial_patterns if p in lower) >= 2 and not any(k in lower for k in ["patient", "diagnosis", "hospital", "laboratory"]):
-            return False, "Uploaded file appears to be a commercial or financial invoice, not a medical record."
+        financial_patterns = ["tax invoice", "invoice #", "subtotal:", "gstin", "shipping address", "purchase order", "amount due:", "total balance", "payment receipt", "credit card"]
+        if sum(1 for p in financial_patterns if p in lower) >= 2 and not any(k in lower for k in ["patient", "diagnosis", "hospital", "laboratory", "prescription"]):
+            return False, "Uploaded file appears to be a commercial bill or financial invoice, not an authentic medical record."
 
-        # Medical vocabulary check
+        academic_patterns = ["abstract", "references", "conclusion", "introduction", "methodology", "dataset", "literature review", "table 1:", "table 2:"]
+        if sum(1 for p in academic_patterns if p in lower) >= 3 and not any(k in lower for k in ["patient demographics", "discharge medications", "chief complaint", "vital signs", "physical examination"]):
+            return False, "Uploaded file appears to be a general academic research paper or literature review rather than an individualized patient clinical record."
+
+        # 2. Medical vocabulary density check
         medical_markers = [
             "patient", "clinical", "diagnosis", "doctor", "physician", "hospital", "admission",
             "discharge", "treatment", "medication", "dose", "tablet", "blood", "pressure", "heart",
@@ -69,18 +73,54 @@ class DocumentParserEngine:
             "vitals", "cbc", "ecg", "troponin", "artery", "syndrome", "acute", "chronic", "edema",
             "pain", "mg", "tablet", "daily", "infection", "biopsy", "renal", "hepatic", "neurology",
             "orthopedic", "stenosis", "stent", "infarction", "stroke", "meniscus", "hemiparesis",
-            "findings:", "impression:", "reference range", "hba1c", "cholesterol", "platelets"
+            "findings:", "impression:", "reference range", "hba1c", "cholesterol", "platelets",
+            "chief complaint", "history of present illness", "physical examination", "operative report"
         ]
 
         matched_markers = [m for m in medical_markers if m in lower]
-        if len(matched_markers) < 2:
+        if len(matched_markers) < 3:
             return False, (
-                "No recognizable clinical markers, EHR headers, laboratory analytes, or medical diagnostic terms "
-                "were identified in this document. MedExplain AI only processes Clinical Notes, Discharge Summaries, "
-                "Laboratory Reports (CBC, CMP, Lipid), Radiology Imaging Scans (CT, MRI, X-Ray), or Prescriptions."
+                "Validation Exception: No recognizable clinical diagnosis, patient encounter markers, "
+                "laboratory analytes, or medical posology terms were identified in this document. "
+                "MedExplain AI strictly processes valid medical records (Discharge Summaries, Lab Panels, Imaging CT/MRI Scans, or Prescriptions)."
             )
 
         return True, "Valid clinical document."
+
+    def extract_patient_metadata(self, text: str) -> Dict[str, Any]:
+        """
+        Extracts real patient demographics strictly from the document text.
+        Guarantees zero out-of-document synthetic filler data.
+        """
+        name_match = re.search(r'(?:PATIENT(?: NAME)?|PATIENT):\s*([A-Za-z\s]+?)(?:\||\n|,|\bAGE\b|\bID\b|\bMRN\b|$)', text, re.IGNORECASE)
+        id_match = re.search(r'(?:PATIENT ID|ID|MRN|RECORD NO\.?|RECORD NUMBER):\s*([A-Za-z0-9\-]+)', text, re.IGNORECASE)
+        age_match = re.search(r'(?:AGE|PATIENT DEMOGRAPHICS):\s*(\d{1,3})(?:\s*[-–]?\s*year|\s*yo|\s*yr|/|\bM\b|\bF\b)', text, re.IGNORECASE)
+        gender_match = re.search(r'(?:GENDER|SEX):\s*([MF]|Male|Female)', text, re.IGNORECASE)
+
+        gender = None
+        if gender_match:
+            g = gender_match.group(1).upper()
+            gender = "Male" if g.startswith("M") else "Female"
+        elif re.search(r'\b(?:male|gentleman)\b', text, re.IGNORECASE):
+            gender = "Male"
+        elif re.search(r'\b(?:female|woman|lady)\b', text, re.IGNORECASE):
+            gender = "Female"
+
+        ward_match = re.search(r'(?:WARD|ROOM|CLINICAL WARD|DEPARTMENT):\s*([^\n|,]+)', text, re.IGNORECASE)
+
+        clean_name = None
+        if name_match:
+            raw_name = name_match.group(1).strip()
+            if len(raw_name) > 2 and not raw_name.lower().startswith(("demographics", "record", "summary", "clinical")):
+                clean_name = raw_name.title()
+
+        return {
+            "name": clean_name,
+            "id": id_match.group(1).strip() if id_match else None,
+            "age": int(age_match.group(1)) if age_match else None,
+            "gender": gender,
+            "ward": ward_match.group(1).strip() if ward_match else None
+        }
 
     def detect_document_type(self, text: str) -> str:
         """

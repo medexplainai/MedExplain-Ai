@@ -65,28 +65,38 @@ export default function App() {
       localStorage.setItem('metrohealth_user', JSON.stringify(user));
     } catch {}
 
-    if (samples.length > 0) {
-      const matchedCase = samples.find(s => s.patient_name === user.name) || samples[0];
-      setSelectedCaseTitle(matchedCase.title);
-      setActiveOrganId(matchedCase.specialty || 'Cardiology');
-      analyzeText(matchedCase.text, {
-        name: matchedCase.patient_name || user.name,
-        id: matchedCase.patient_id || user.patientId,
-        age: matchedCase.age || user.age,
-        gender: matchedCase.gender || user.gender,
-        ward: matchedCase.ward || user.ward
-      });
+    if (user.role === 'patient') {
+      // Patient starts fresh with their own document intake screen
+      setSelectedCaseTitle('');
+      setAnalysisResult(null);
+      setCurrentText('');
+    } else {
+      if (samples.length > 0) {
+        const matchedCase = samples.find(s => s.patient_name === user.name) || samples[0];
+        setSelectedCaseTitle(matchedCase.title);
+        setActiveOrganId(matchedCase.specialty || 'Cardiology');
+        analyzeText(matchedCase.text, {
+          name: matchedCase.patient_name || user.name,
+          id: matchedCase.patient_id || user.patientId,
+          age: matchedCase.age || user.age,
+          gender: matchedCase.gender || user.gender,
+          ward: matchedCase.ward || user.ward
+        });
+      }
     }
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
+    setAnalysisResult(null);
+    setSelectedCaseTitle('');
+    setCurrentText('');
     try {
       localStorage.removeItem('metrohealth_user');
     } catch {}
   };
 
-  // Initial load: Fetch samples and initialize default case
+  // Initial load: Fetch samples and initialize default case (for doctors only)
   useEffect(() => {
     async function loadInitial() {
       try {
@@ -96,16 +106,18 @@ export default function App() {
         setSamples(sampleList);
 
         if (sampleList.length > 0 && !analysisResult) {
-          const defaultCase = sampleList[0];
-          setSelectedCaseTitle(defaultCase.title);
-          setActiveOrganId(defaultCase.specialty || 'Cardiology');
-          analyzeText(defaultCase.text, {
-            name: defaultCase.patient_name || 'Marcus Vance',
-            id: defaultCase.patient_id || 'PT-2026-8841',
-            age: defaultCase.age || 58,
-            gender: defaultCase.gender || 'Male',
-            ward: defaultCase.ward || 'Coronary ICU'
-          });
+          if (!currentUser || currentUser.role !== 'patient') {
+            const defaultCase = sampleList[0];
+            setSelectedCaseTitle(defaultCase.title);
+            setActiveOrganId(defaultCase.specialty || 'Cardiology');
+            analyzeText(defaultCase.text, {
+              name: defaultCase.patient_name || 'Marcus Vance',
+              id: defaultCase.patient_id || 'PT-2026-8841',
+              age: defaultCase.age || 58,
+              gender: defaultCase.gender || 'Male',
+              ward: defaultCase.ward || 'Coronary ICU'
+            });
+          }
         }
       } catch (err) {
         console.error('Failed to load initial cases:', err);
@@ -211,9 +223,17 @@ export default function App() {
       if (!resp.ok) {
         const errJson = await resp.json().catch(() => ({}));
         const detail = errJson.detail || {};
+        let errTitle = 'Medical Validation Exception';
+        let errReason = 'The uploaded file could not be verified as a valid medical or clinical record.';
+        if (typeof detail === 'string') {
+          errReason = detail;
+        } else if (typeof detail === 'object') {
+          errTitle = detail.title || errTitle;
+          errReason = detail.reason || errReason;
+        }
         setUploadError({
-          title: detail.title || 'Uploaded Document Cannot Be Processed',
-          reason: detail.reason || 'The uploaded file could not be verified as a valid medical or clinical record.',
+          title: errTitle,
+          reason: errReason,
           filename: file.name
         });
         return;
@@ -307,22 +327,127 @@ export default function App() {
             selectedCaseTitle={selectedCaseTitle}
             onDownloadDocx={handleDownloadDocx}
             onLogout={handleLogout}
-            samples={samples}
-            onSelectPatient={(pt) => {
-              setSelectedCaseTitle(pt.title);
-              if (pt.specialty) setActiveOrganId(pt.specialty);
-              analyzeText(pt.text, {
-                name: pt.patient_name,
-                id: pt.patient_id,
-                age: pt.age,
-                gender: pt.gender,
-                ward: pt.ward
-              });
+            onUploadFile={handleUploadFile}
+            onAnalyzeCustomText={handleAnalyzeCustom}
+            onResetDocument={() => {
+              setAnalysisResult(null);
+              setSelectedCaseTitle('');
+              setCurrentText('');
             }}
+            isAnalyzing={isAnalyzing}
           />
           <CollegeTeamFooter />
         </main>
         <ClinicalPipelineLoader isAnalyzing={isAnalyzing} onComplete={() => {}} />
+
+        {/* Medical Validation Exception Alert Modal for Patient Portal */}
+        {uploadError && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '20px'
+          }}>
+            <div style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              maxWidth: '540px',
+              width: '100%',
+              boxShadow: '0 20px 40px rgba(220, 38, 38, 0.25)',
+              border: '2px solid #ef4444',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                background: '#fef2f2',
+                borderBottom: '1px solid #fee2e2',
+                padding: '18px 24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '10px',
+                    background: '#dc2626',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)'
+                  }}>
+                    <ShieldAlert size={20} color="#ffffff" />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#991b1b', margin: 0 }}>
+                      {uploadError.title || 'Medical Validation Exception'}
+                    </h3>
+                    <span style={{ fontSize: '11.5px', color: '#b91c1c', fontWeight: 600 }}>
+                      Document Rejected: {uploadError.filename}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setUploadError(null)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#991b1b' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div style={{ padding: '22px 24px' }}>
+                <div style={{
+                  background: '#fef2f2',
+                  border: '1px solid #fca5a5',
+                  borderRadius: '10px',
+                  padding: '14px 16px',
+                  marginBottom: '16px',
+                  fontSize: '13px',
+                  color: '#7f1d1d',
+                  lineHeight: '1.6'
+                }}>
+                  <strong>Validation Reason:</strong>
+                  <p style={{ margin: '6px 0 0 0', color: '#991b1b' }}>{uploadError.reason}</p>
+                </div>
+
+                <div style={{ fontSize: '12px', color: '#475569', marginBottom: '20px' }}>
+                  <strong style={{ color: '#0f172a', display: 'block', marginBottom: '6px' }}>Supported Clinical Document Formats:</strong>
+                  <ul style={{ margin: 0, paddingLeft: '18px', lineHeight: '1.6' }}>
+                    <li>Hospital Discharge Summaries & Inpatient EHR Notes</li>
+                    <li>Laboratory Diagnostic Test Reports (CBC, CMP, Lipid, HbA1c, Renal)</li>
+                    <li>Radiology & Imaging Scans (Chest CT, MRI, X-Ray)</li>
+                    <li>Doctor Prescriptions & Medication Protocols</li>
+                  </ul>
+                </div>
+
+                <button
+                  onClick={() => setUploadError(null)}
+                  className="btn btn-primary"
+                  style={{
+                    width: '100%',
+                    background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                    border: 'none',
+                    padding: '12px',
+                    fontSize: '13.5px',
+                    fontWeight: 800,
+                    borderRadius: '10px',
+                    boxShadow: '0 4px 14px rgba(239, 68, 68, 0.35)'
+                  }}
+                >
+                  Dismiss & Choose Medical File
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

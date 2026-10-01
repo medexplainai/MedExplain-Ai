@@ -40,7 +40,7 @@ export default function PatientDemographicsBanner({ patient, documentType, speci
           <Clock size={12} /> Age / Gender
         </div>
         <div style={{ fontSize: '14px', fontWeight: 700, marginTop: '2px', color: '#ffffff' }}>
-          {patient.age} yrs / {patient.gender}
+          {patient.age ? `${patient.age} yrs` : 'Age: Not Recorded'} / {patient.gender || 'Not Recorded'}
         </div>
       </div>
 
@@ -49,7 +49,7 @@ export default function PatientDemographicsBanner({ patient, documentType, speci
           <MapPin size={12} /> Clinical Ward
         </div>
         <div style={{ fontSize: '14px', fontWeight: 700, marginTop: '2px', color: '#ffffff' }}>
-          {patient.ward || 'Diagnostic Suite'}
+          {patient.ward || 'Not Recorded'}
         </div>
       </div>
 

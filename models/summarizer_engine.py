@@ -58,44 +58,57 @@ class SummarizerEngine:
         """
         High-speed deterministic layperson translation engine (<50ms).
         Converts medical jargon into Grade 6 plain language without external API latency.
+        Strictly grounded on the clinical text without out-of-document hallucinations.
         """
+        # Extract explicit diagnoses or impressions if present
+        diag_matches = re.findall(r'(?:DISCHARGE DIAGNOSIS|PREOPERATIVE DIAGNOSIS|DIAGNOSIS|IMPRESSION|CONCLUSION):\s*([^\n\.]+)', clinical_text, re.IGNORECASE)
+        chief_match = re.search(r'(?:CHIEF COMPLAINT|CLINICAL INDICATION|INDICATION|REASON FOR EXAM):\s*([^\n\.]+)', clinical_text, re.IGNORECASE)
+
+        diagnoses = []
+        if diag_matches:
+            for dm in diag_matches:
+                for item in re.split(r'[;,]', dm):
+                    clean_d = item.strip()
+                    if clean_d and len(clean_d) > 2:
+                        diagnoses.append(clean_d)
+
         overview_lines = []
-        if specialty == "Cardiology":
+        if diagnoses:
+            primary_diag = diagnoses[0]
             overview_lines.append(
-                "You were treated in the hospital for a heart condition where blood flow through your heart's arteries was temporarily reduced (a heart attack). "
-                "The medical team opened the narrowed blood vessel with a small mesh tube called a stent to restore healthy blood flow. "
-                "Your heart muscle is healing, and taking your prescribed medications every day is critical to keep the new stent open and prevent future heart events."
+                f"Your medical record indicates that you received clinical care and evaluation for {primary_diag}. "
+                "Our clinical team reviewed your diagnostic results and tailored your care plan to ensure steady recovery. "
+                "Please follow the specific daily guidelines and medication schedule outlined below."
             )
-        elif specialty == "Neurology":
+        elif chief_match and len(chief_match.group(1).strip()) > 3:
             overview_lines.append(
-                "You experienced an ischemic stroke, which occurs when a small clot briefly blocks blood and oxygen from reaching part of the brain. "
-                "This caused sudden weakness on one side of your body and speech difficulty. "
-                "With physical therapy, speech exercises, and proper blood pressure control, your brain can gradually recover strength and function."
+                f"You were evaluated by the clinical team regarding your symptoms: {chief_match.group(1).strip()}. "
+                "Diagnostic assessments have been reviewed to establish a safe management plan for your recovery."
             )
-        elif specialty == "Orthopedics":
+        elif specialty == "Cardiology" and ("heart" in clinical_text.lower() or "infarction" in clinical_text.lower()):
+            has_stent = "stent" in clinical_text.lower()
             overview_lines.append(
-                "You underwent minimally invasive arthroscopic surgery to repair and smooth out a torn cartilage cushion (meniscus) inside your right knee joint. "
-                "The unstable torn cartilage was carefully removed so it will no longer catch or cause knee pain. "
-                "Your main focus now is resting the leg, using ice to keep swelling down, and doing gentle movements to rebuild knee flexibility."
+                "You were evaluated for a cardiac condition affecting the blood flow to your heart. "
+                + ("A stent was placed to keep the blood vessel open. " if has_stent else "Your heart health is being closely monitored. ")
+                + "Taking prescribed medications daily and getting proper rest are essential for your heart recovery."
             )
-        elif specialty == "Endocrinology":
+        elif specialty == "Neurology" and ("stroke" in clinical_text.lower() or "mca" in clinical_text.lower()):
             overview_lines.append(
-                "Your recent tests show that your blood sugar levels have been running significantly higher than normal, which has started irritating the small nerves in your feet. "
-                "This nerve irritation is what causes the burning and tingling sensations you have been feeling at night. "
-                "By adjusting your daily medications, taking your bedtime insulin as prescribed, and checking your feet daily, you can protect your nerves and restore healthy blood sugar levels."
+                "You experienced an acute neurological event (stroke) causing temporary weakness or speech difficulty. "
+                "With physical exercises and strict blood pressure monitoring, your brain circulation can continue to stabilize and heal."
             )
         else:
             overview_lines.append(
-                "You received medical evaluation and specialized treatment for your symptoms. "
-                "The doctors reviewed your laboratory tests and tailored your daily medications to help your body recover smoothly at home."
+                f"You received specialized medical evaluation in {specialty}. "
+                "Your diagnostic findings and clinical indicators have been assessed to support your continued recovery at home."
             )
 
-        # Medication schedule extraction
+        # Medication schedule extraction strictly from document
         medication_table = []
         med_matches = re.findall(r'(\d+[\.\)]?\s*[A-Za-z]+(?:\s[A-Za-z]+)?)\s(\d+(?:\.\d+)?\s*(?:mg|mcg|units|g|ml))([^\n]+)', clinical_text, re.IGNORECASE)
-        
+
         if med_matches:
-            for item in med_matches[:6]:
+            for item in med_matches[:8]:
                 raw_name = re.sub(r'^\d+[\.\)]?\s*', '', item[0]).strip().title()
                 dosage = item[1].strip()
                 instructions = item[2].strip()
@@ -117,25 +130,20 @@ class SummarizerEngine:
                     "instructions": instructions.capitalize() or "Take with a glass of water"
                 })
         else:
-            if specialty == "Cardiology":
-                medication_table = [
-                    {"medication": "Aspirin", "dosage": "81 mg", "schedule": "Once every morning", "instructions": "Take with food to protect your stomach; prevents blood clots."},
-                    {"medication": "Ticagrelor (Brilinta)", "dosage": "90 mg", "schedule": "Morning and Night", "instructions": "Crucial to keep your stent open; do not skip doses."},
-                    {"medication": "Atorvastatin", "dosage": "80 mg", "schedule": "Once at bedtime", "instructions": "Lowers cholesterol and stabilizes blood vessel walls."},
-                    {"medication": "Metoprolol", "dosage": "25 mg", "schedule": "Twice daily", "instructions": "Keeps your heart rate and blood pressure in a calm, safe range."},
-                    {"medication": "Nitroglycerin", "dosage": "0.4 mg", "schedule": "Emergency PRN", "instructions": "Dissolve under tongue only if chest pain occurs."}
-                ]
-            elif specialty == "Neurology":
-                medication_table = [
-                    {"medication": "Clopidogrel (Plavix)", "dosage": "75 mg", "schedule": "Once daily in morning", "instructions": "Thins the blood to protect your brain against new clots."},
-                    {"medication": "Aspirin", "dosage": "81 mg", "schedule": "Once daily with lunch", "instructions": "Protects blood vessel lining and prevents platelet aggregation."},
-                    {"medication": "Rosuvastatin", "dosage": "40 mg", "schedule": "Once at bedtime", "instructions": "Reduces plaque buildup in your neck (carotid) arteries."},
-                    {"medication": "Lisinopril", "dosage": "10 mg", "schedule": "Once daily in morning", "instructions": "Lowers blood pressure to protect brain circulation."}
-                ]
-            else:
-                medication_table = [
-                    {"medication": "Prescribed Treatment", "dosage": "Standard dose", "schedule": "As directed", "instructions": "Take consistently with meals as directed by your physician."}
-                ]
+            # Check if any standard medical prescription block exists or single drug names
+            known_drugs = ["Aspirin", "Metformin", "Atorvastatin", "Lisinopril", "Metoprolol", "Clopidogrel", "Acetaminophen", "Celecoxib", "Albuterol"]
+            for kd in known_drugs:
+                if re.search(r'\b' + re.escape(kd) + r'\b', clinical_text, re.IGNORECASE):
+                    medication_table.append({
+                        "medication": kd,
+                        "dosage": "As stated in note",
+                        "schedule": "As directed by physician",
+                        "instructions": "Follow prescribing doctor's discharge instructions."
+                    })
+
+            # If no medications are mentioned in the clinical text, DO NOT hallucinate fake pills!
+            if not medication_table:
+                medication_table = []
 
         lifestyle = {
             "dos": [

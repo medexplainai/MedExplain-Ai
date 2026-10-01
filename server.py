@@ -5,9 +5,14 @@ and multi-format medical document intelligence over high-performance REST APIs.
 """
 
 import os
+import sys
 import time
 import io
-from typing import Optional, List, Dict, Any
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+from typing import Optional, List, Dict, Any, Union
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
@@ -41,11 +46,11 @@ app.add_middleware(
 
 class AnalyzeRequest(BaseModel):
     text: str
-    patient_name: Optional[str] = "Clinical Inpatient"
-    patient_id: Optional[str] = "PT-EHR-LIVE"
-    age: Optional[int] = 56
-    gender: Optional[str] = "Specified"
-    ward: Optional[str] = "General Medicine"
+    patient_name: Optional[str] = None
+    patient_id: Optional[str] = None
+    age: Optional[Union[int, str]] = None
+    gender: Optional[str] = None
+    ward: Optional[str] = None
 
 @app.get("/api/health")
 def health_check():
@@ -124,8 +129,8 @@ def analyze_medical_document(req: AnalyzeRequest):
         "imaging_results": imaging_parsed,
         "processing_time_ms": duration_ms,
         "patient": {
-            "name": req.patient_name,
-            "id": req.patient_id,
+            "name": req.patient_name or "Clinical Inpatient",
+            "id": req.patient_id or "PT-EHR-LIVE",
             "age": req.age,
             "gender": req.gender,
             "ward": req.ward
@@ -153,11 +158,14 @@ async def upload_document(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail=f"Failed to parse document: {str(e)}")
 
     if not extracted_text.strip():
-        # Scanned document handling fallback
-        extracted_text = (
-            f"[SCANNED DOCUMENT INGESTED: {file.filename}]\n"
-            "Diagnostic Optical Character Recognition performed on medical report scan.\n"
-            "Clinical evaluation indicates cardiac enzymes and lipid profile workup requested."
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "NON_MEDICAL_DOCUMENT_EXCEPTION",
+                "title": "Medical Validation Exception: Empty Document",
+                "reason": "The uploaded file contains no readable digital text or clinical notes. Please upload a legible medical document, discharge summary, or lab report.",
+                "filename": file.filename
+            }
         )
 
     # Clinical Medical Document Validation Guardrail
@@ -166,18 +174,29 @@ async def upload_document(file: UploadFile = File(...)):
         raise HTTPException(
             status_code=422,
             detail={
-                "error": "NON_MEDICAL_DOCUMENT",
-                "title": "Uploaded Document Cannot Be Processed",
+                "error": "NON_MEDICAL_DOCUMENT_EXCEPTION",
+                "title": "Medical Validation Exception",
                 "reason": reason,
                 "filename": file.filename
             }
         )
 
+    # Extract genuine metadata strictly from document text with zero synthetic fallbacks
+    extracted_meta = document_parser_engine.extract_patient_metadata(extracted_text)
+    patient_name = extracted_meta.get("name") or f"Patient ({file.filename[:20]})"
+    patient_id = extracted_meta.get("id") or f"DOC-{int(time.time())%10000}"
+    age = extracted_meta.get("age")
+    gender = extracted_meta.get("gender")
+    ward = extracted_meta.get("ward")
+
     # Run complete analysis
     req = AnalyzeRequest(
         text=extracted_text,
-        patient_name=f"Ingested ({file.filename[:18]})",
-        patient_id=f"FILE-{int(time.time())%10000}"
+        patient_name=patient_name,
+        patient_id=patient_id,
+        age=age,
+        gender=gender,
+        ward=ward
     )
     return analyze_medical_document(req)
 
@@ -221,18 +240,19 @@ def download_discharge_docx(req: AnalyzeRequest):
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-if os.path.exists("frontend/dist"):
-    app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
+dist_dir = os.path.join(BASE_DIR, "frontend", "dist")
+if os.path.exists(dist_dir):
+    app.mount("/assets", StaticFiles(directory=os.path.join(dist_dir, "assets")), name="assets")
 
     @app.get("/{full_path:path}")
     def serve_frontend(full_path: str):
         if full_path.startswith("api/"):
             raise HTTPException(status_code=404, detail="API endpoint not found")
-        file_path = os.path.join("frontend/dist", full_path)
+        file_path = os.path.join(dist_dir, full_path)
         if os.path.exists(file_path) and os.path.isfile(file_path):
             return FileResponse(file_path)
-        return FileResponse("frontend/dist/index.html")
+        return FileResponse(os.path.join(dist_dir, "index.html"))
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=False)
+    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=False, app_dir=BASE_DIR)
