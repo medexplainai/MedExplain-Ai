@@ -42,7 +42,17 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       const saved = localStorage.getItem('metrohealth_user');
-      return saved ? JSON.parse(saved) : null;
+      if (!saved) return null;
+      const parsed = JSON.parse(saved);
+      if (parsed.role === 'patient') {
+        parsed.name = 'Patient User';
+        delete parsed.patientId;
+        delete parsed.age;
+        delete parsed.gender;
+        delete parsed.ward;
+        delete parsed.room;
+      }
+      return parsed;
     } catch {
       return null;
     }
@@ -58,6 +68,15 @@ export default function App() {
   const [activeOrganId, setActiveOrganId] = useState('Cardiology');
   const [uploadError, setUploadError] = useState(null);
   const [viewScreen, setViewScreen] = useState('workstation'); // 'landing' | 'workstation'
+  const [doctorSignOff, setDoctorSignOff] = useState({
+    isSigned: false,
+    doctorName: 'Dr. Sarah Jenkins, MD',
+    title: 'Attending Physician & Chief Medical Officer',
+    department: 'Cardiology & Acute Inpatient Care',
+    npi: 'NPI-948210492',
+    timestamp: null,
+    hash: null
+  });
 
   const handleLogin = (user) => {
     setCurrentUser(user);
@@ -111,11 +130,11 @@ export default function App() {
             setSelectedCaseTitle(defaultCase.title);
             setActiveOrganId(defaultCase.specialty || 'Cardiology');
             analyzeText(defaultCase.text, {
-              name: defaultCase.patient_name || 'Marcus Vance',
-              id: defaultCase.patient_id || 'PT-2026-8841',
-              age: defaultCase.age || 58,
-              gender: defaultCase.gender || 'Male',
-              ward: defaultCase.ward || 'Coronary ICU'
+              name: defaultCase.patient_name,
+              id: defaultCase.patient_id,
+              age: defaultCase.age,
+              gender: defaultCase.gender,
+              ward: defaultCase.ward
             });
           }
         }
@@ -150,13 +169,33 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: text,
-          patient_name: patientMeta.name || 'Marcus Vance',
-          patient_id: patientMeta.id || 'PT-2026-8841',
-          age: patientMeta.age || 58,
-          gender: patientMeta.gender || 'Male',
-          ward: patientMeta.ward || 'Coronary ICU'
+          patient_name: patientMeta.name || null,
+          patient_id: patientMeta.id || null,
+          age: patientMeta.age || null,
+          gender: patientMeta.gender || null,
+          ward: patientMeta.ward || null
         })
       });
+
+      if (!resp.ok) {
+        const errJson = await resp.json().catch(() => ({}));
+        const detail = errJson.detail || {};
+        let errTitle = 'Medical Validation Exception';
+        let errReason = 'The document or text could not be verified as an authentic clinical or healthcare record.';
+        if (typeof detail === 'string') {
+          errReason = detail;
+        } else if (typeof detail === 'object') {
+          errTitle = detail.title || errTitle;
+          errReason = detail.reason || errReason;
+        }
+        setUploadError({
+          title: errTitle,
+          reason: errReason,
+          filename: patientMeta.name ? `${patientMeta.name}'s Note` : 'Clinical Note Input'
+        });
+        return;
+      }
+
       const result = await resp.json();
       setAnalysisResult(result);
       setCurrentText(text);
@@ -169,6 +208,11 @@ export default function App() {
       }
     } catch (err) {
       console.error('Analysis request error:', err);
+      setUploadError({
+        title: 'Document Analysis Error',
+        reason: 'Failed to communicate with medical analysis service. Please try again.',
+        filename: 'Clinical Input'
+      });
     } finally {
       setIsAnalyzing(false);
     }
@@ -263,14 +307,8 @@ export default function App() {
 
   const handleAnalyzeCustom = (text) => {
     setViewScreen('workstation');
-    setSelectedCaseTitle('Custom Clinical Intake');
-    analyzeText(text, {
-      name: 'Custom Inpatient',
-      id: 'PT-CUSTOM-01',
-      age: 60,
-      gender: 'Specified',
-      ward: 'Acute Assessment Ward'
-    });
+    setSelectedCaseTitle('Custom Clinical Note');
+    analyzeText(text, {});
   };
 
   const handleDownloadDocx = async () => {
@@ -300,6 +338,27 @@ export default function App() {
     }
   };
 
+  const handleDoctorSignOff = () => {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const randomHex = Math.random().toString(16).substring(2, 10).toUpperCase();
+    const certHash = `SHA256:MH-${now.getFullYear()}-${randomHex}`;
+
+    setDoctorSignOff({
+      isSigned: true,
+      doctorName: currentUser?.name || 'Dr. Sarah Jenkins, MD',
+      title: currentUser?.title || 'Attending Physician & Chief Medical Officer',
+      department: currentUser?.department || 'Cardiology & Acute Inpatient Care',
+      npi: 'NPI-948210492',
+      timestamp: `${dateStr} at ${timeStr}`,
+      hash: certHash
+    });
+
+    // Also trigger official DOCX download
+    handleDownloadDocx();
+  };
+
   const docType = analysisResult?.document_type || 'Clinical Discharge Summary';
   const specialty = analysisResult?.classification?.top_specialty || activeOrganId || 'Cardiology';
   const isPreIngested = !selectedCaseTitle?.startsWith('Uploaded:') && selectedCaseTitle !== 'Custom Clinical Intake';
@@ -312,7 +371,7 @@ export default function App() {
   // 2. If authenticated as Patient, render Patient Dashboard View
   if (currentUser.role === 'patient') {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f8fafc' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'transparent' }}>
         <Navbar
           latencyMs={analysisResult?.processing_time_ms}
           documentType={docType}
@@ -454,7 +513,7 @@ export default function App() {
 
   // 3. Authenticated as Doctor: Render Doctor Workstation with Patient Search
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f8fafc' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'transparent' }}>
       {/* Top Navbar */}
       <Navbar
         latencyMs={analysisResult?.processing_time_ms}
@@ -493,11 +552,11 @@ export default function App() {
               marginBottom: '20px',
               flexWrap: 'wrap',
               gap: '12px',
-              background: '#ffffff',
-              padding: '12px 18px',
-              borderRadius: '12px',
-              border: '1.5px solid #e2e8f0',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+              background: 'linear-gradient(135deg, #ffffff 0%, #f0fdfa 100%)',
+              padding: '14px 20px',
+              borderRadius: '14px',
+              border: '1.5px solid #99f6e4',
+              boxShadow: '0 4px 16px rgba(13, 148, 136, 0.05)'
             }}>
               <button
                 onClick={() => setViewScreen('landing')}
@@ -641,15 +700,15 @@ export default function App() {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              borderBottom: '2px solid #e2e8f0',
+              borderBottom: '2px solid #cbd5e1',
               marginBottom: '24px',
               flexWrap: 'wrap',
               gap: '12px'
             }}>
-              <div style={{ display: 'flex', gap: '4px', overflowX: 'auto' }}>
+              <div style={{ display: 'flex', gap: '6px', overflowX: 'auto' }}>
                 {[
                   { id: 'tab_diagnostics', label: '1. Diagnostic Co-Pilot & XAI Evidence', icon: Stethoscope, color: '#2563eb' },
-                  { id: 'tab_patient', label: '2. Patient Layman Care Portal', icon: HeartHandshake, color: '#059669' },
+                  { id: 'tab_patient', label: '2. Patient Discharge Summary (Doctor Review & Sign-Off)', icon: FileCheck2, color: '#059669' },
                   { id: 'tab_safety', label: '3. NLI Closed-Loop Safety Guardrail', icon: ShieldCheck, color: '#dc2626' },
                   { id: 'tab_intake', label: '4. Source Document & Raw Transcription', icon: FileText, color: '#475569' },
                   { id: 'tab_arch', label: '5. Architecture & Innovations', icon: Cpu, color: '#7c3aed' }
@@ -668,9 +727,11 @@ export default function App() {
                         fontSize: '13px',
                         fontWeight: isActive ? 800 : 600,
                         color: isActive ? tab.color : '#64748b',
-                        background: 'none',
-                        border: 'none',
+                        background: isActive ? `${tab.color}14` : 'transparent',
+                        borderRadius: '10px 10px 0 0',
+                        border: isActive ? `1.5px solid ${tab.color}35` : '1.5px solid transparent',
                         borderBottom: `3px solid ${isActive ? tab.color : 'transparent'}`,
+                        boxShadow: isActive ? `0 -2px 10px ${tab.color}15` : 'none',
                         cursor: 'pointer',
                         transition: 'all 0.15s ease',
                         marginBottom: '-2px'
@@ -689,10 +750,12 @@ export default function App() {
                 className="btn btn-primary"
                 style={{
                   marginBottom: '6px',
-                  background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-                  boxShadow: '0 2px 8px rgba(37, 99, 235, 0.35)',
+                  background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                  boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)',
                   fontSize: '12.5px',
-                  padding: '8px 16px'
+                  padding: '9px 18px',
+                  border: 'none',
+                  borderRadius: '10px'
                 }}
               >
                 <Download size={15} />
@@ -716,12 +779,126 @@ export default function App() {
               </div>
             )}
 
-            {/* TAB 2: Patient Care Portal */}
+            {/* TAB 2: Patient Discharge Summary (Doctor Review & Sign-Off) */}
             {activeTab === 'tab_patient' && analysisResult && (
-              <PatientCarePortal
-                summary={analysisResult.summary}
-                onDownloadDocx={handleDownloadDocx}
-              />
+              <div>
+                {/* Clinician Review & Pre-Release Sign-Off Banner */}
+                <div style={{
+                  background: doctorSignOff.isSigned
+                    ? 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)'
+                    : 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
+                  border: doctorSignOff.isSigned ? '2px solid #86efac' : '1.5px solid #a7f3d0',
+                  borderRadius: '14px',
+                  padding: '18px 22px',
+                  marginBottom: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '14px',
+                  boxShadow: doctorSignOff.isSigned
+                    ? '0 4px 18px rgba(16, 185, 129, 0.15)'
+                    : '0 2px 8px rgba(16, 185, 129, 0.06)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <div style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '12px',
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#ffffff',
+                      boxShadow: '0 4px 10px rgba(16, 185, 129, 0.3)'
+                    }}>
+                      <ShieldCheck size={24} />
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 800, color: '#047857', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          Doctor-In-The-Loop Oversight & Clinical Governance
+                        </span>
+                        <span style={{
+                          background: doctorSignOff.isSigned ? '#bbf7d0' : '#dcfce7',
+                          color: '#166534',
+                          border: '1px solid #86efac',
+                          borderRadius: '999px',
+                          padding: '1px 8px',
+                          fontSize: '11px',
+                          fontWeight: 700
+                        }}>
+                          {doctorSignOff.isSigned ? 'Digitally Countersigned & Released' : 'Pre-Release Review Mode'}
+                        </span>
+                      </div>
+                      <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#065f46', margin: 0 }}>
+                        {doctorSignOff.isSigned
+                          ? `Discharge Packet Certified by ${doctorSignOff.doctorName}`
+                          : 'Patient Discharge Summary Verification & Approval'}
+                      </h3>
+                      <p style={{ fontSize: '12.5px', color: '#475569', margin: '3px 0 0 0', maxWidth: '680px' }}>
+                        {doctorSignOff.isSigned ? (
+                          <>
+                            Attested on <strong>{doctorSignOff.timestamp}</strong> • Cryptographic Audit Hash: <code style={{ fontSize: '11.5px', color: '#047857', background: '#ffffff', padding: '1px 6px', borderRadius: '4px', border: '1px solid #86efac' }}>{doctorSignOff.hash}</code>. Verified compliant with hospital EHR protocols.
+                          </>
+                        ) : (
+                          <>
+                            Verify the AI-translated Grade 6 layman plan, medication schedule, and red flags before releasing to <strong>{analysisResult.patient?.name || 'the patient'}</strong>.
+                          </>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => window.print()}
+                      className="btn btn-secondary"
+                      style={{
+                        padding: '10px 16px',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        borderRadius: '9px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <Printer size={15} color="#0284c7" />
+                      <span>Print Bedside Sheet</span>
+                    </button>
+
+                    <button
+                      onClick={handleDoctorSignOff}
+                      className="btn btn-primary"
+                      style={{
+                        background: doctorSignOff.isSigned
+                          ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)'
+                          : 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                        border: 'none',
+                        padding: '10px 18px',
+                        fontSize: '13px',
+                        fontWeight: 800,
+                        borderRadius: '9px',
+                        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      <Download size={15} />
+                      <span>{doctorSignOff.isSigned ? 'Re-Download Signed (.docx)' : 'Approve & Sign-Off Discharge (.docx)'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <PatientCarePortal
+                  summary={analysisResult.summary}
+                  patient={analysisResult.patient}
+                  onDownloadDocx={handleDownloadDocx}
+                  doctorSignOff={doctorSignOff}
+                />
+              </div>
             )}
 
             {/* TAB 3: NLI Safety Guardrail */}

@@ -107,12 +107,17 @@ class ClinicalEngine:
                     found_meds.add(m.strip().title())
         entities["medications"] = sorted(list(found_meds))[:8]
 
-        # 2. Vital Signs Pattern
-        bp_match = re.findall(r'(\d{2,3}/\d{2,3}\s*mmHg)', text)
-        hr_match = re.findall(r'(\d{2,3}\s*bpm)', text)
-        spo2_match = re.findall(r'(SpO2\s*\d{2,3}%)', text, re.IGNORECASE)
-        for v in bp_match + hr_match + spo2_match:
-            entities["vital_signs"].append(v.strip())
+        # 2. Vital Signs Pattern (BP, HR, SpO2)
+        bp_match = re.findall(r'(?:BP[:\s]*|blood pressure[:\s]*)?(\d{2,3}/\d{2,3})(?:\s*mmHg)?', text, re.IGNORECASE)
+        hr_match = re.findall(r'(?:HR[:\s]*|pulse[:\s]*|heart rate[:\s]*)(\d{2,3})\s*(?:bpm|beats/min|\/min)?', text, re.IGNORECASE)
+        spo2_match = re.findall(r'(?:SpO2|oxygen saturation|O2 sat)[:\s]*(\d{2,3}\s*%)', text, re.IGNORECASE)
+
+        if bp_match:
+            entities["vital_signs"].append(f"{bp_match[0]} mmHg")
+        if hr_match:
+            entities["vital_signs"].append(f"{hr_match[0]} bpm")
+        if spo2_match:
+            entities["vital_signs"].append(f"SpO2 {spo2_match[0]}")
 
         # 3. Lab / Diagnostic Keywords
         lab_keywords = [

@@ -178,12 +178,12 @@ export default function ExplainabilityHeatmap({ heatmapHtml, rawText, specialty,
               overflowY: 'auto',
               boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.02)'
             }}
-            dangerouslySetInnerHTML={{ __html: heatmapHtml || '<p>Heatmap computation complete.</p>' }}
+            dangerouslySetInnerHTML={{ __html: (heatmapHtml || '<p>Heatmap computation complete.</p>').replace(/\*\*/g, '') }}
           />
         ) : (
           <textarea
             readOnly
-            value={rawText}
+            value={(rawText || '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*\*/g, '')}
             style={{
               width: '100%',
               height: '380px',

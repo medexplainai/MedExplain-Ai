@@ -39,12 +39,7 @@ export default function AuthScreen({ onLogin }) {
       onLogin({
         role: 'patient',
         email: 'patient@gmail.com',
-        name: 'Marcus Vance',
-        patientId: 'PT-2026-8841',
-        age: 58,
-        gender: 'Male',
-        ward: 'Coronary Intensive Care',
-        room: 'CCU - Bed 402B'
+        name: 'Patient User'
       });
     } else {
       setError('Invalid credentials. For Doctor: doctor@gmail.com / doctor. For Patient: patient@gmail.com / patient.');

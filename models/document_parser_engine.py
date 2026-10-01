@@ -38,8 +38,10 @@ class DocumentParserEngine:
 
     def is_valid_medical_document(self, text: str) -> tuple[bool, str]:
         """
-        Validates whether uploaded text constitutes a genuine clinical/medical document.
+        Validates whether uploaded text constitutes an authentic clinical/medical document.
         Returns (is_valid, rejection_reason).
+        Strictly rejects non-medical documents: software code, resumes, invoices, recipes,
+        sports/entertainment, legal agreements, and general non-clinical texts.
         """
         clean = text.strip()
         if len(clean) < 40:
@@ -47,42 +49,125 @@ class DocumentParserEngine:
 
         lower = clean.lower()
 
-        # 1. Non-medical document heuristics (code, resumes, financial, general text)
-        code_patterns = ["import react", "const [", "def __init__", "class ", "function()", "<!doctype html", "public static void", "select * from", "npm install", "github.com", "export default"]
-        if sum(1 for p in code_patterns if p in lower) >= 2:
-            return False, "Uploaded file appears to be software source code or IT documentation rather than a clinical record."
-
-        resume_patterns = ["curriculum vitae", "work experience", "education:", "projects:", "hobbies:", "b.tech", "cgpa:", "technical skills:", "objective:", "linkedin:", "github.com/"]
-        if sum(1 for p in resume_patterns if p in lower) >= 2 and not any(k in lower for k in ["discharge diagnosis", "patient history", "prescription", "chief complaint"]):
-            return False, "Uploaded file appears to be a resume / curriculum vitae rather than a clinical healthcare record."
-
-        financial_patterns = ["tax invoice", "invoice #", "subtotal:", "gstin", "shipping address", "purchase order", "amount due:", "total balance", "payment receipt", "credit card"]
-        if sum(1 for p in financial_patterns if p in lower) >= 2 and not any(k in lower for k in ["patient", "diagnosis", "hospital", "laboratory", "prescription"]):
-            return False, "Uploaded file appears to be a commercial bill or financial invoice, not an authentic medical record."
-
-        academic_patterns = ["abstract", "references", "conclusion", "introduction", "methodology", "dataset", "literature review", "table 1:", "table 2:"]
-        if sum(1 for p in academic_patterns if p in lower) >= 3 and not any(k in lower for k in ["patient demographics", "discharge medications", "chief complaint", "vital signs", "physical examination"]):
-            return False, "Uploaded file appears to be a general academic research paper or literature review rather than an individualized patient clinical record."
-
-        # 2. Medical vocabulary density check
-        medical_markers = [
-            "patient", "clinical", "diagnosis", "doctor", "physician", "hospital", "admission",
-            "discharge", "treatment", "medication", "dose", "tablet", "blood", "pressure", "heart",
-            "cardiac", "pulmonary", "respiratory", "glucose", "diabetes", "mri", "ct scan", "x-ray",
-            "surgery", "pathology", "laboratory", "specimen", "exam", "symptoms", "prescription",
-            "vitals", "cbc", "ecg", "troponin", "artery", "syndrome", "acute", "chronic", "edema",
-            "pain", "mg", "tablet", "daily", "infection", "biopsy", "renal", "hepatic", "neurology",
-            "orthopedic", "stenosis", "stent", "infarction", "stroke", "meniscus", "hemiparesis",
-            "findings:", "impression:", "reference range", "hba1c", "cholesterol", "platelets",
-            "chief complaint", "history of present illness", "physical examination", "operative report"
+        # 1. Non-medical domain detectors
+        # Software code / technical scripts
+        code_patterns = [
+            "import react", "const [", "def __init__", "class ", "function()", "<!doctype html",
+            "public static void", "select * from", "npm install", "github.com", "export default",
+            "console.log", "async function", "<script", "pip install", "#include <", "std::cout",
+            "dockerfile", "kubectl", "git commit", "return jsonify", "void main()"
         ]
-
-        matched_markers = [m for m in medical_markers if m in lower]
-        if len(matched_markers) < 3:
+        if sum(1 for p in code_patterns if p in lower) >= 2:
             return False, (
-                "Validation Exception: No recognizable clinical diagnosis, patient encounter markers, "
-                "laboratory analytes, or medical posology terms were identified in this document. "
-                "MedExplain AI strictly processes valid medical records (Discharge Summaries, Lab Panels, Imaging CT/MRI Scans, or Prescriptions)."
+                "Uploaded file appears to be software source code or IT documentation rather than a clinical healthcare record. "
+                "MedExplain AI is an explainable clinical decision support platform and only accepts authentic medical documentation."
+            )
+
+        # Resumes / Curriculum Vitae
+        resume_patterns = [
+            "curriculum vitae", "work experience", "education:", "projects:", "hobbies:", "b.tech",
+            "cgpa:", "technical skills:", "objective:", "linkedin:", "github.com/", "references available upon request",
+            "skills summary", "bachelor of", "master of science", "career objective", "job experience"
+        ]
+        if sum(1 for p in resume_patterns if p in lower) >= 2 and not any(k in lower for k in ["discharge diagnosis", "patient history", "prescription", "chief complaint"]):
+            return False, (
+                "Uploaded file appears to be a resume or curriculum vitae rather than an individual patient healthcare record. "
+                "Please upload a hospital discharge summary, laboratory test panel, radiology scan report, or doctor prescription."
+            )
+
+        # Commercial bills / financial invoices
+        financial_patterns = [
+            "tax invoice", "invoice #", "subtotal:", "gstin", "shipping address", "purchase order",
+            "amount due:", "total balance", "payment receipt", "credit card", "billed to:", "bank transfer",
+            "order id", "remit to:", "due date:"
+        ]
+        if sum(1 for p in financial_patterns if p in lower) >= 2 and not any(k in lower for k in ["patient", "diagnosis", "hospital", "laboratory", "prescription"]):
+            return False, (
+                "Uploaded file appears to be a commercial bill, shipping order, or financial invoice rather than an authentic patient medical record."
+            )
+
+        # Culinary / Cooking recipes
+        recipe_patterns = [
+            "ingredients:", "preheat oven", "tablespoon", "teaspoon", "stir until", "bake for",
+            "cups flour", "cook on medium heat", "pinch of salt", "simmer for", "chopped onions"
+        ]
+        if sum(1 for p in recipe_patterns if p in lower) >= 2:
+            return False, (
+                "Uploaded file appears to be a culinary recipe or cooking guide rather than a clinical medical record."
+            )
+
+        # Sports / Entertainment news
+        sports_patterns = [
+            "championship", "tournament", "premier league", "quarterback", "touchdown", "scored a goal",
+            "half-time", "box office", "hollywood", "world cup", "olympics", "nba finals"
+        ]
+        if sum(1 for p in sports_patterns if p in lower) >= 2 and not any(k in lower for k in ["patient", "diagnosis", "hospital", "prescription"]):
+            return False, (
+                "Uploaded file appears to be sports news or entertainment content rather than a clinical healthcare document."
+            )
+
+        # Legal contracts / Terms of service
+        legal_patterns = [
+            "terms and conditions", "privacy policy", "hereby agree", "indemnification",
+            "jurisdiction of courts", "governing law", "intellectual property rights", "binding arbitration"
+        ]
+        if sum(1 for p in legal_patterns if p in lower) >= 2 and not any(k in lower for k in ["patient", "diagnosis", "hospital", "prescription"]):
+            return False, (
+                "Uploaded file appears to be a legal contract, agreement, or terms of service rather than an individualized patient medical document."
+            )
+
+        # Academic papers / General computer science literature
+        academic_patterns = ["abstract", "references", "conclusion", "introduction", "methodology", "dataset", "literature review", "table 1:", "table 2:"]
+        if sum(1 for p in academic_patterns if p in lower) >= 3 and not any(k in lower for k in ["patient demographics", "discharge medications", "chief complaint", "vital signs", "physical examination", "laboratory"]):
+            return False, (
+                "Uploaded file appears to be a general academic research paper or literature review rather than an individualized patient clinical record."
+            )
+
+        # 2. Positive clinical verification
+        # Check clinical evidence categories
+        clinical_evidence_categories = {
+            "encounter_context": [
+                "patient", "clinical", "hospital", "admission", "discharge", "physician", "doctor",
+                "attending", "clinic", "ward", "icu", "emergency department", "outpatient", "inpatient",
+                "chief complaint", "history of present illness", "physical examination", "assessment & plan",
+                "operative report", "consultation", "specimen"
+            ],
+            "diagnoses_conditions": [
+                "diagnosis", "infarction", "ischemia", "stenosis", "stent", "stroke", "diabetes", "hypertension",
+                "pneumonia", "meniscal", "fracture", "edema", "carcinoma", "arrhythmia", "syndrome", "embolism",
+                "atherosclerosis", "neuropathy", "nephropathy", "aphasia", "hemiparesis", "infection", "coronary",
+                "cardiac", "pulmonary", "respiratory", "renal", "hepatic", "neurology", "orthopedic", "pathology"
+            ],
+            "diagnostics_labs_imaging": [
+                "laboratory", "reference range", "hba1c", "glucose", "cholesterol", "platelets", "hemoglobin",
+                "creatinine", "bun", "wbc", "cbc", "troponin", "mri", "ct scan", "x-ray", "ultrasound", "biopsy",
+                "findings:", "impression:", "contrast", "axial", "specimen", "urinalysis"
+            ],
+            "medications_posology": [
+                "medication", "dose", "tablet", "capsule", "prescription", "rx:", "daily", "mg", "mcg", "bid",
+                "tid", "qid", "prn", "sublingually", "subcutaneously", "infusion", "oral", "refills", "dispense"
+            ],
+            "vital_signs": [
+                "vital signs", "blood pressure", "heart rate", "pulse", "spo2", "temperature", "respiratory rate",
+                "mmhg", "bpm", "o2 sat"
+            ]
+        }
+
+        matched_categories = 0
+        total_matched_terms = 0
+
+        for cat_name, terms in clinical_evidence_categories.items():
+            matched_terms = [t for t in terms if t in lower]
+            if matched_terms:
+                matched_categories += 1
+                total_matched_terms += len(matched_terms)
+
+        # A valid medical record must span at least 2 distinct clinical evidence categories and have at least 3 clinical terms
+        if matched_categories < 2 or total_matched_terms < 3:
+            return False, (
+                "Medical Validation Exception: Uploaded document does not contain recognizable patient clinical findings, "
+                "diagnoses, vital signs, laboratory analytes, or medical posology terms. "
+                "MedExplain AI strictly processes authentic healthcare records (Discharge Summaries, Lab Diagnostic Reports, Radiology Scans, or Doctor Prescriptions)."
             )
 
         return True, "Valid clinical document."
@@ -94,7 +179,7 @@ class DocumentParserEngine:
         """
         name_match = re.search(r'(?:PATIENT(?: NAME)?|PATIENT):\s*([A-Za-z\s]+?)(?:\||\n|,|\bAGE\b|\bID\b|\bMRN\b|$)', text, re.IGNORECASE)
         id_match = re.search(r'(?:PATIENT ID|ID|MRN|RECORD NO\.?|RECORD NUMBER):\s*([A-Za-z0-9\-]+)', text, re.IGNORECASE)
-        age_match = re.search(r'(?:AGE|PATIENT DEMOGRAPHICS):\s*(\d{1,3})(?:\s*[-–]?\s*year|\s*yo|\s*yr|/|\bM\b|\bF\b)', text, re.IGNORECASE)
+        age_match = re.search(r'(?:AGE|PATIENT DEMOGRAPHICS)[:\s]+(\d{1,3})', text, re.IGNORECASE)
         gender_match = re.search(r'(?:GENDER|SEX):\s*([MF]|Male|Female)', text, re.IGNORECASE)
 
         gender = None

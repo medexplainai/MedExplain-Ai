@@ -54,12 +54,12 @@ export default function DoctorPatientSearch({
 
   return (
     <div style={{
-      background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-      border: '1.5px solid #cbd5e1',
+      background: 'linear-gradient(135deg, #ffffff 0%, #f0fdfa 50%, #eff6ff 100%)',
+      border: '1.5px solid #99f6e4',
       borderRadius: '16px',
       padding: '20px 24px',
       marginBottom: '22px',
-      boxShadow: '0 4px 16px rgba(15, 23, 42, 0.05)',
+      boxShadow: '0 4px 20px rgba(13, 148, 136, 0.08)',
       position: 'relative'
     }}>
       {/* Header Row */}

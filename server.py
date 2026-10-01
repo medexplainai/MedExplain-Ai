@@ -86,8 +86,22 @@ def analyze_medical_document(req: AnalyzeRequest):
     if not req.text.strip():
         raise HTTPException(status_code=400, detail="Empty document text provided.")
 
-    t_start = time.time()
     clinical_text = req.text.strip()
+
+    # Medical Validation Guardrail: Ensure text is authentic clinical/medical document
+    is_valid, reason = document_parser_engine.is_valid_medical_document(clinical_text)
+    if not is_valid:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "NON_MEDICAL_DOCUMENT_EXCEPTION",
+                "title": "Medical Validation Exception",
+                "reason": reason,
+                "filename": req.patient_name or "Custom Clinical Note"
+            }
+        )
+
+    t_start = time.time()
 
     # 1. Detect Document Category
     doc_type = document_parser_engine.detect_document_type(clinical_text)
@@ -117,6 +131,14 @@ def analyze_medical_document(req: AnalyzeRequest):
 
     duration_ms = round((time.time() - t_start) * 1000, 1)
 
+    # Strict metadata extraction: zero synthetic or out-of-document demographic filler
+    extracted_meta = document_parser_engine.extract_patient_metadata(clinical_text)
+    patient_name = req.patient_name if (req.patient_name and req.patient_name not in ["Custom Inpatient", "Marcus Vance", "Clinical Inpatient"]) else extracted_meta.get("name")
+    patient_id = req.patient_id if (req.patient_id and not req.patient_id.startswith("PT-CUSTOM") and req.patient_id != "PT-2026-8841" and req.patient_id != "PT-EHR-LIVE") else extracted_meta.get("id")
+    age = req.age if (req.age is not None and req.age != 60 and req.age != 58) else extracted_meta.get("age")
+    gender = req.gender if (req.gender and req.gender not in ["Specified", "M/F"]) else extracted_meta.get("gender")
+    ward = req.ward if (req.ward and req.ward not in ["Acute Assessment Ward", "Inpatient", "Clinical Encounter"]) else extracted_meta.get("ward")
+
     return {
         "document_type": doc_type,
         "classification": classification,
@@ -129,11 +151,11 @@ def analyze_medical_document(req: AnalyzeRequest):
         "imaging_results": imaging_parsed,
         "processing_time_ms": duration_ms,
         "patient": {
-            "name": req.patient_name or "Clinical Inpatient",
-            "id": req.patient_id or "PT-EHR-LIVE",
-            "age": req.age,
-            "gender": req.gender,
-            "ward": req.ward
+            "name": patient_name,
+            "id": patient_id,
+            "age": age,
+            "gender": gender,
+            "ward": ward
         }
     }
 
@@ -183,8 +205,8 @@ async def upload_document(file: UploadFile = File(...)):
 
     # Extract genuine metadata strictly from document text with zero synthetic fallbacks
     extracted_meta = document_parser_engine.extract_patient_metadata(extracted_text)
-    patient_name = extracted_meta.get("name") or f"Patient ({file.filename[:20]})"
-    patient_id = extracted_meta.get("id") or f"DOC-{int(time.time())%10000}"
+    patient_name = extracted_meta.get("name")
+    patient_id = extracted_meta.get("id")
     age = extracted_meta.get("age")
     gender = extracted_meta.get("gender")
     ward = extracted_meta.get("ward")
@@ -255,4 +277,5 @@ if os.path.exists(dist_dir):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=False, app_dir=BASE_DIR)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("server:app", host="0.0.0.0", port=port, reload=False, app_dir=BASE_DIR)

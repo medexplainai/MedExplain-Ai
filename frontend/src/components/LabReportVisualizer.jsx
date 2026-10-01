@@ -17,12 +17,12 @@ export default function LabReportVisualizer({ labResults }) {
 
   return (
     <div style={{
-      background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-      border: '1px solid #cbd5e1',
+      background: 'linear-gradient(135deg, #ffffff 0%, #f0fdfa 100%)',
+      border: '1.5px solid #a7f3d0',
       borderRadius: '16px',
       padding: '24px',
       marginBottom: '24px',
-      boxShadow: '0 4px 20px -4px rgba(0, 0, 0, 0.05)'
+      boxShadow: '0 4px 20px rgba(16, 185, 129, 0.08)'
     }}>
       <div style={{
         display: 'flex',

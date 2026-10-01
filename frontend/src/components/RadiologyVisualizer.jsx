@@ -6,12 +6,12 @@ export default function RadiologyVisualizer({ imagingResults }) {
 
   return (
     <div style={{
-      background: '#ffffff',
-      border: '1px solid #e2e8f0',
-      borderRadius: '12px',
+      background: 'linear-gradient(135deg, #ffffff 0%, #f0fdfa 100%)',
+      border: '1.5px solid #a5f3fc',
+      borderRadius: '14px',
       padding: '22px',
       marginBottom: '24px',
-      boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+      boxShadow: '0 4px 18px rgba(6, 182, 212, 0.08)'
     }}>
       <div style={{
         display: 'flex',

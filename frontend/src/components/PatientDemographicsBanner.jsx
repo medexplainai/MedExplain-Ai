@@ -22,7 +22,7 @@ export default function PatientDemographicsBanner({ patient, documentType, speci
           <User size={12} /> Patient Name
         </div>
         <div style={{ fontSize: '15px', fontWeight: 800, marginTop: '2px', color: '#ffffff' }}>
-          {patient.name}
+          {patient.name || 'Not Documented in Report'}
         </div>
       </div>
 
@@ -31,7 +31,7 @@ export default function PatientDemographicsBanner({ patient, documentType, speci
           <Hash size={12} /> Medical Record No.
         </div>
         <div style={{ fontSize: '14px', fontWeight: 700, marginTop: '2px', fontFamily: 'JetBrains Mono, monospace', color: '#ffffff' }}>
-          {patient.id}
+          {patient.id || 'Not Documented'}
         </div>
       </div>
 
@@ -40,7 +40,7 @@ export default function PatientDemographicsBanner({ patient, documentType, speci
           <Clock size={12} /> Age / Gender
         </div>
         <div style={{ fontSize: '14px', fontWeight: 700, marginTop: '2px', color: '#ffffff' }}>
-          {patient.age ? `${patient.age} yrs` : 'Age: Not Recorded'} / {patient.gender || 'Not Recorded'}
+          {patient.age ? `${patient.age} yrs` : 'Age: Not Recorded'} / {patient.gender ? `Gender: ${patient.gender}` : 'Gender: Not Recorded'}
         </div>
       </div>
 
@@ -49,7 +49,7 @@ export default function PatientDemographicsBanner({ patient, documentType, speci
           <MapPin size={12} /> Clinical Ward
         </div>
         <div style={{ fontSize: '14px', fontWeight: 700, marginTop: '2px', color: '#ffffff' }}>
-          {patient.ward || 'Not Recorded'}
+          {patient.ward || 'Not Documented'}
         </div>
       </div>
 

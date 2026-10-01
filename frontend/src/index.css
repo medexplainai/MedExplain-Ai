@@ -56,7 +56,7 @@
 
 body {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: #f8fafc;
+  background: radial-gradient(1400px circle at 15% 15%, #e0f2fe 0%, #ecfdf5 30%, #f0fdfa 55%, #f8fafc 85%, #f1f5f9 100%) fixed;
   color: #0f172a;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -66,22 +66,24 @@ code, pre {
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* Glassmorphism & Enterprise Card Containers */
+/* Glassmorphism & Enterprise Medical Card Containers */
 .card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdfd 100%);
+  border: 1.5px solid #cbd5e1;
+  border-radius: 14px;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(14, 165, 233, 0.05);
   transition: all 0.2s ease;
 }
 
 .card:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  border-color: #94a3b8;
+  box-shadow: 0 8px 24px -2px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(14, 165, 233, 0.08);
 }
 
 .card-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid #f1f5f9;
+  padding: 16px 22px;
+  background: linear-gradient(135deg, #f0fdfa 0%, #eff6ff 100%);
+  border-bottom: 1.5px solid #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -121,19 +123,19 @@ code, pre {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 10px;
+  padding: 4px 11px;
   border-radius: 9999px;
   font-size: 11.5px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.2px;
 }
 
-.badge-blue { background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
-.badge-green { background: #d1fae5; color: #047857; border: 1px solid #a7f3d0; }
-.badge-amber { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
-.badge-rose { background: #ffe4e6; color: #be123c; border: 1px solid #fecdd3; }
-.badge-purple { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
-.badge-cyan { background: #cffafe; color: #0e7490; border: 1px solid #a5f3fc; }
+.badge-blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.badge-green { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+.badge-amber { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+.badge-rose { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+.badge-purple { background: #faf5ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+.badge-cyan { background: #ecfeff; color: #0e7490; border: 1px solid #a5f3fc; }
 
 /* Buttons */
 .btn {
@@ -151,22 +153,24 @@ code, pre {
 }
 
 .btn-primary {
-  background: #2563eb;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   color: #ffffff;
-  border-color: #1d4ed8;
-  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+  border: 1px solid #1d4ed8;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
 }
 .btn-primary:hover {
-  background: #1d4ed8;
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
 }
 
 .btn-secondary {
-  background: #ffffff;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   color: #334155;
-  border-color: #cbd5e1;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 .btn-secondary:hover {
-  background: #f8fafc;
+  background: #f1f5f9;
   border-color: #94a3b8;
 }
 
@@ -225,4 +229,53 @@ code, pre {
 @keyframes ecgPulse {
   0% { background-position: 0% 50%; }
   100% { background-position: 200% 50%; }
+}
+
+/* Print Stylesheet for Official Bedside Discharge Packet */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+  
+  header, nav, .no-print, button, input, textarea, footer, .pulse-dot {
+    display: none !important;
+  }
+
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #cbd5e1 !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin-bottom: 18px !important;
+    background: #ffffff !important;
+  }
+
+  .card-header {
+    background: #f8fafc !important;
+    border-bottom: 1px solid #cbd5e1 !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid #0f172a;
+    padding-bottom: 12px;
+    margin-bottom: 18px;
+  }
+}
+
+.print-only {
+  display: none;
 }
