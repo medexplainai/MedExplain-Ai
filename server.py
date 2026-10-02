@@ -215,13 +215,51 @@ def analyze_medical_document(req: AnalyzeRequest):
 
     duration_ms = round((time.time() - t_start) * 1000, 1)
 
-    # Strict metadata extraction: zero synthetic or out-of-document demographic filler
+    # Accurate metadata resolution: extract genuine demographics from text, or respect authenticated patient record
     extracted_meta = document_parser_engine.extract_patient_metadata(clinical_text)
-    patient_name = req.patient_name if (req.patient_name and req.patient_name not in ["Custom Inpatient", "Marcus Vance", "Clinical Inpatient"]) else extracted_meta.get("name")
-    patient_id = req.patient_id if (req.patient_id and not req.patient_id.startswith("PT-CUSTOM") and req.patient_id != "PT-2026-8841" and req.patient_id != "PT-EHR-LIVE") else extracted_meta.get("id")
-    age = req.age if (req.age is not None and req.age != 60 and req.age != 58) else extracted_meta.get("age")
-    gender = req.gender if (req.gender and req.gender not in ["Specified", "M/F"]) else extracted_meta.get("gender")
-    ward = req.ward if (req.ward and req.ward not in ["Acute Assessment Ward", "Inpatient", "Clinical Encounter"]) else extracted_meta.get("ward")
+
+    # 1. Patient Name: prioritize extracted from note, fallback to request if valid non-generic name
+    raw_name = extracted_meta.get("name")
+    if not raw_name and req.patient_name and req.patient_name.strip():
+        cand = req.patient_name.strip()
+        if cand.lower() not in ["custom inpatient", "clinical inpatient", "anonymous", "unknown", "patient user"]:
+            raw_name = cand
+    patient_name = raw_name
+
+    # 2. Medical Record Number / Patient ID: prioritize extracted, fallback to request ID
+    raw_id = extracted_meta.get("id")
+    if not raw_id and req.patient_id and req.patient_id.strip():
+        cand_id = req.patient_id.strip()
+        if not cand_id.startswith("PT-CUSTOM") and cand_id != "PT-0000":
+            raw_id = cand_id
+    patient_id = raw_id
+
+    # 3. Age
+    raw_age = extracted_meta.get("age")
+    if raw_age is None and req.age is not None:
+        try:
+            val = int(req.age)
+            if 0 < val < 125:
+                raw_age = val
+        except (ValueError, TypeError):
+            pass
+    age = raw_age
+
+    # 4. Gender
+    raw_gender = extracted_meta.get("gender")
+    if not raw_gender and req.gender and req.gender.strip():
+        cand_g = req.gender.strip()
+        if cand_g.lower() not in ["specified", "m/f"]:
+            raw_gender = cand_g
+    gender = raw_gender
+
+    # 5. Clinical Ward
+    raw_ward = extracted_meta.get("ward")
+    if not raw_ward and req.ward and req.ward.strip():
+        cand_w = req.ward.strip()
+        if cand_w.lower() not in ["acute assessment ward", "inpatient", "clinical encounter"]:
+            raw_ward = cand_w
+    ward = raw_ward
 
     return {
         "document_type": doc_type,

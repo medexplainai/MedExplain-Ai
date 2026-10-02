@@ -16,7 +16,7 @@ SAMPLE_CLINICAL_NOTES = {
         "chief_complaint": "Acute retrosternal chest pressure and dyspnea on exertion.",
         "text": (
             "PATIENT CLINICAL RECORD - DISCHARGE SUMMARY\n"
-            "PATIENT DEMOGRAPHICS: 58-year-old male.\n"
+            "PATIENT: Marcus Vance | MRN: PT-2026-8841 | AGE: 58 | GENDER: Male | WARD: Coronary Intensive Care\n"
             "CHIEF COMPLAINT: Retrosternal chest pressure radiating to the left shoulder, associated with diaphoresis and shortness of breath.\n"
             "HISTORY OF PRESENT ILLNESS: The patient is a 58-year-old male with a history of essential hypertension and hyperlipidemia who presented to the emergency department after experiencing acute sub-sternal chest discomfort radiating to his left jaw and left arm. Onset occurred while climbing stairs, lasting approximately 45 minutes.\n"
             "PHYSICAL EXAMINATION: Blood pressure 158/94 mmHg, heart rate 92 bpm, respiratory rate 20 bpm, SpO2 96% on ambient air. Cardiovascular exam reveals regular rate and rhythm, with an S4 gallop noted. No peripheral edema.\n"
@@ -43,7 +43,7 @@ SAMPLE_CLINICAL_NOTES = {
         "chief_complaint": "Sudden onset right-sided hemiparesis and expressive aphasia.",
         "text": (
             "PATIENT CLINICAL RECORD - DISCHARGE SUMMARY\n"
-            "PATIENT DEMOGRAPHICS: 64-year-old female.\n"
+            "PATIENT: Eleanor Brooks | MRN: PT-2026-7129 | AGE: 64 | GENDER: Female | WARD: Neurological Intensive Care\n"
             "CHIEF COMPLAINT: Acute onset of right upper extremity weakness and speech difficulty.\n"
             "HISTORY OF PRESENT ILLNESS: The patient was in her usual state of health until approximately 08:30 AM when family noticed facial asymmetry, slurred speech, and weakness in her right arm and leg. NIH Stroke Scale score upon presentation was 9.\n"
             "PHYSICAL EXAMINATION: Alert and oriented x 3. Motor strength: Right upper extremity 3/5, right lower extremity 4/5. Left extremities 5/5. Mild right central facial palsy. Expressive dysphasia with intact comprehension.\n"
@@ -69,7 +69,7 @@ SAMPLE_CLINICAL_NOTES = {
         "chief_complaint": "Persistent right knee pain with mechanical locking and joint effusion.",
         "text": (
             "OPERATIVE REPORT & POST-OPERATIVE DISCHARGE SUMMARY\n"
-            "PATIENT DEMOGRAPHICS: 42-year-old male.\n"
+            "PATIENT: David Miller | MRN: PT-2026-5512 | AGE: 42 | GENDER: Male | WARD: Orthopedic Surgical Care\n"
             "PREOPERATIVE DIAGNOSIS: Complex tear of the medial meniscus, right knee; mild tricompartmental chondromalacia.\n"
             "PROCEDURE PERFORMED: Right knee arthroscopy with partial medial meniscectomy and chondroplasty.\n"
             "OPERATIVE FINDINGS: Diagnostic arthroscopy confirmed an unstable complex tear of the posterior horn and body of the medial meniscus. The torn, unstable fragments were resected back to a smooth, stable rim with motorized shaver and basket forceps. Patellofemoral tracking was stable.\n"
@@ -93,7 +93,7 @@ SAMPLE_CLINICAL_NOTES = {
         "chief_complaint": "Uncontrolled hyperglycemia with bilateral distal lower extremity paresthesias.",
         "text": (
             "CLINICAL CONSULTATION & MANAGEMENT SUMMARY\n"
-            "PATIENT DEMOGRAPHICS: 51-year-old female.\n"
+            "PATIENT: Maria Gonzalez | MRN: PT-2026-4421 | AGE: 51 | GENDER: Female | WARD: Endocrine & Metabolic Care\n"
             "CHIEF COMPLAINT: Burning dysesthesia in bilateral feet and persistently elevated self-monitored blood glucose levels (220-280 mg/dL).\n"
             "HISTORY OF PRESENT ILLNESS: Patient has a 9-year history of Type 2 Diabetes Mellitus with sub-optimal glycemic control. She reports gradual progression of burning pain and numbness in a stocking-glove distribution over the past 8 months, worse at night.\n"
             "PHYSICAL EXAMINATION: Bilateral foot exam reveals decreased pinprick sensation and loss of 10-gram monofilament sensation in the distal plantar surfaces. Dorsalis pedis and posterior tibial pulses 2+ bilaterally. No open ulcers or skin breakdown.\n"

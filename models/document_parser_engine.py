@@ -175,36 +175,99 @@ class DocumentParserEngine:
     def extract_patient_metadata(self, text: str) -> Dict[str, Any]:
         """
         Extracts real patient demographics strictly from the document text.
-        Guarantees zero out-of-document synthetic filler data.
+        Supports standard hospital EHR, discharge, laboratory, and prescription header formats.
         """
-        name_match = re.search(r'(?:PATIENT(?: NAME)?|PATIENT):\s*([A-Za-z\s]+?)(?:\||\n|,|\bAGE\b|\bID\b|\bMRN\b|$)', text, re.IGNORECASE)
-        id_match = re.search(r'(?:PATIENT ID|ID|MRN|RECORD NO\.?|RECORD NUMBER):\s*([A-Za-z0-9\-]+)', text, re.IGNORECASE)
-        age_match = re.search(r'(?:AGE|PATIENT DEMOGRAPHICS)[:\s]+(\d{1,3})', text, re.IGNORECASE)
-        gender_match = re.search(r'(?:GENDER|SEX):\s*([MF]|Male|Female)', text, re.IGNORECASE)
+        # 1. Patient Name Extraction
+        name_patterns = [
+            r'(?:PATIENT(?:\s*NAME)?|NAME(?:\s*OF\s*PATIENT)?|PT(?:\s*NAME)?|CLIENT(?:\s*NAME)?|SUBJECT)\s*[:\-]\s*([A-Za-z\.\'\s]+?)(?:\||\n|,|\bAGE\b|\bDOB\b|\bID\b|\bMRN\b|\bSEX\b|\bGENDER\b|$|\r)',
+            r'(?:^|\n)\s*PATIENT\s*[:\-]\s*([A-Za-z\.\'\s]+?)(?:\||\n|,|$)',
+            r'(?:^|\n)\s*NAME\s*[:\-]\s*([A-Za-z\.\'\s]+?)(?:\||\n|,|$)',
+            r'PATIENT\s*:\s*([A-Za-z\s]+?)(?:\s*\||\s*MRN|\s*AGE|\s*\n)'
+        ]
+        clean_name = None
+        for pat in name_patterns:
+            name_match = re.search(pat, text, re.IGNORECASE)
+            if name_match:
+                raw_name = name_match.group(1).strip()
+                # Discard non-name keywords
+                if (
+                    len(raw_name) > 2 and
+                    not raw_name.lower().startswith((
+                        "demographics", "record", "summary", "clinical", "note", "history",
+                        "admission", "discharge", "consultation", "assessment", "encounter",
+                        "anonymized", "unknown", "inpatient", "outpatient"
+                    )) and
+                    not any(k in raw_name.lower() for k in ["discharge summary", "clinical record", "operative report"])
+                ):
+                    clean_name = raw_name.title()
+                    break
 
+        # 2. Medical Record Number / Patient ID Extraction
+        id_patterns = [
+            r'\b(?:MRN|PATIENT\s*ID|MEDICAL\s*RECORD\s*(?:NO\.?|NUMBER|#)?|MED\.?\s*REC\.?\s*(?:NO\.?|#)?|RECORD\s*(?:NO\.?|NUMBER|#)|REG\.?\s*(?:NO\.?|NUMBER|#)?|UHID(?:\s*NO\.?)?|IP\s*(?:NO\.?|#)|IPD\s*(?:NO\.?|#)?|OP\s*(?:NO\.?|#)|OPD\s*(?:NO\.?|#)?|CASE\s*(?:NO\.?|NUMBER|#)?|CHART\s*(?:NO\.?|NUMBER|#)?|HOSPITAL\s*(?:NO\.?|NUMBER|#)?|PT\s*ID|ID\s*NO\.?|ID)\s*[:#\-=]\s*([A-Za-z0-9\-_/]+)',
+            r'\b(PT-2026-\d{4})\b',
+            r'\b(MRN[- #]?[A-Za-z0-9\-]+)\b'
+        ]
+        clean_id = None
+        disallowed_ids = {"discharge", "summary", "clinical", "record", "inpatient", "outpatient", "operative", "procedure", "consultation", "assessment", "the", "and", "not", "none", "yes", "idemia", "erative"}
+        for pat in id_patterns:
+            for m in re.finditer(pat, text, re.IGNORECASE):
+                found_id = m.group(1).strip()
+                if len(found_id) >= 3 and found_id.lower() not in disallowed_ids:
+                    clean_id = found_id
+                    break
+            if clean_id:
+                break
+
+        # 3. Age Extraction
+        age_patterns = [
+            r'(?:AGE|PATIENT\s*AGE|AGE\s*AT\s*ADMISSION)\s*[:\-]?\s*(\d{1,3})\s*(?:YRS?|YEARS?|YO|Y/O)?',
+            r'(\d{1,3})\s*[- ]?(?:year[- ]old|yo|y/o|yr[- ]old|years[- ]old)',
+            r'(?:PATIENT DEMOGRAPHICS)[:\s]+(\d{1,3})'
+        ]
+        clean_age = None
+        for pat in age_patterns:
+            age_match = re.search(pat, text, re.IGNORECASE)
+            if age_match:
+                try:
+                    val = int(age_match.group(1))
+                    if 0 < val < 125:
+                        clean_age = val
+                        break
+                except ValueError:
+                    pass
+
+        # 4. Gender Extraction
+        gender_match = re.search(r'(?:GENDER|SEX)\s*[:\-]?\s*([MF]|Male|Female|Other)', text, re.IGNORECASE)
         gender = None
         if gender_match:
             g = gender_match.group(1).upper()
-            gender = "Male" if g.startswith("M") else "Female"
-        elif re.search(r'\b(?:male|gentleman)\b', text, re.IGNORECASE):
+            gender = "Male" if g.startswith("M") else "Female" if g.startswith("F") else "Other"
+        elif re.search(r'\b(?:\d{1,3}\s*[- ]?(?:year[- ]old|yo|y/o)\s+)?(?:male|gentleman|man)\b', text, re.IGNORECASE):
             gender = "Male"
-        elif re.search(r'\b(?:female|woman|lady)\b', text, re.IGNORECASE):
+        elif re.search(r'\b(?:\d{1,3}\s*[- ]?(?:year[- ]old|yo|y/o)\s+)?(?:female|woman|lady)\b', text, re.IGNORECASE):
             gender = "Female"
 
-        ward_match = re.search(r'(?:WARD|ROOM|CLINICAL WARD|DEPARTMENT):\s*([^\n|,]+)', text, re.IGNORECASE)
-
-        clean_name = None
-        if name_match:
-            raw_name = name_match.group(1).strip()
-            if len(raw_name) > 2 and not raw_name.lower().startswith(("demographics", "record", "summary", "clinical")):
-                clean_name = raw_name.title()
+        # 5. Ward / Room / Clinical Unit Extraction
+        ward_patterns = [
+            r'(?:WARD|ROOM|CLINICAL\s*WARD|DEPARTMENT|CARE\s*UNIT|UNIT|SERVICE)\s*[:\-]?\s*([^\n|,;]+)',
+            r'\b(Coronary Intensive Care|Neurological Intensive Care|Orthopedic Surgical Care|Endocrine & Metabolic Care|Pathology & Diagnostic Medicine|Pulmonary Acute Care|CCU|ICU|Neuro ICU)\b'
+        ]
+        clean_ward = None
+        for pat in ward_patterns:
+            ward_match = re.search(pat, text, re.IGNORECASE)
+            if ward_match:
+                w = ward_match.group(1).strip()
+                if len(w) > 2 and not w.lower().startswith(("summary", "note", "not")):
+                    clean_ward = w
+                    break
 
         return {
             "name": clean_name,
-            "id": id_match.group(1).strip() if id_match else None,
-            "age": int(age_match.group(1)) if age_match else None,
+            "id": clean_id,
+            "age": clean_age,
             "gender": gender,
-            "ward": ward_match.group(1).strip() if ward_match else None
+            "ward": clean_ward
         }
 
     def detect_document_type(self, text: str) -> str:

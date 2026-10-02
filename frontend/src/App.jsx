@@ -784,9 +784,15 @@ export default function App() {
             )}
 
             {/* Patient Demographics Card */}
-            {analysisResult?.patient && (
+            {(analysisResult?.patient || activePatient) && (
               <PatientDemographicsBanner
-                patient={analysisResult.patient}
+                patient={{
+                  name: analysisResult?.patient?.name || activePatient?.name || activePatient?.patient_name,
+                  id: analysisResult?.patient?.id || activePatient?.id || activePatient?.patient_id,
+                  age: (analysisResult?.patient?.age !== undefined && analysisResult?.patient?.age !== null) ? analysisResult.patient.age : activePatient?.age,
+                  gender: analysisResult?.patient?.gender || activePatient?.gender,
+                  ward: analysisResult?.patient?.ward || activePatient?.ward
+                }}
                 documentType={docType}
                 specialty={specialty}
               />

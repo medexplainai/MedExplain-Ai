@@ -14,7 +14,7 @@
       "title": "Cardiology: Acute Myocardial Ischemia (Inpatient Admission)",
       "date": "2026-09-15",
       "type": "Inpatient Admission Note",
-      "text": "PATIENT CLINICAL RECORD - DISCHARGE SUMMARY\nPATIENT DEMOGRAPHICS: 58-year-old male.\nCHIEF COMPLAINT: Retrosternal chest pressure radiating to the left shoulder, associated with diaphoresis and shortness of breath.\nHISTORY OF PRESENT ILLNESS: The patient is a 58-year-old male with a history of essential hypertension and hyperlipidemia who presented to the emergency department after experiencing acute sub-sternal chest discomfort radiating to his left jaw and left arm. Onset occurred while climbing stairs, lasting approximately 45 minutes.\nPHYSICAL EXAMINATION: Blood pressure 158/94 mmHg, heart rate 92 bpm, respiratory rate 20 bpm, SpO2 96% on ambient air. Cardiovascular exam reveals regular rate and rhythm, with an S4 gallop noted. No peripheral edema.\nDIAGNOSTIC WORKUP: Electrocardiogram (ECG) demonstrated ST-segment depression of 1.5 mm in leads V4-V6 with T-wave inversions. Serum Cardiac Troponin I was elevated at 1.82 ng/mL (reference < 0.04 ng/mL). Coronary catheterization revealed 85% stenosis of the left anterior descending (LAD) coronary artery, successfully treated with drug-eluting stent (DES) placement.\nDISCHARGE DIAGNOSIS: Non-ST Elevation Myocardial Infarction (NSTEMI); Coronary Artery Disease.\nDISCHARGE MEDICATIONS:\n1. Aspirin 81 mg oral daily.\n2. Ticagrelor (Brilinta) 90 mg oral twice daily.\n3. Atorvastatin 80 mg oral once daily at bedtime.\n4. Metoprolol Tartrate 25 mg oral twice daily.\n5. Sublingual Nitroglycerin 0.4 mg PRN every 5 minutes for acute chest pain (maximum 3 doses).\nDISCHARGE INSTRUCTIONS: Strict low-sodium, heart-healthy diet. Avoid strenuous exertion for 2 weeks. Follow up with outpatient cardiology in 10 days. Report immediately to the emergency room for recurrent chest pain, syncope, or severe dyspnea."
+      "text": "PATIENT CLINICAL RECORD - DISCHARGE SUMMARY\nPATIENT: Marcus Vance | MRN: PT-2026-8841 | AGE: 58 | GENDER: Male | WARD: Coronary Intensive Care\nCHIEF COMPLAINT: Retrosternal chest pressure radiating to the left shoulder, associated with diaphoresis and shortness of breath.\nHISTORY OF PRESENT ILLNESS: The patient is a 58-year-old male with a history of essential hypertension and hyperlipidemia who presented to the emergency department after experiencing acute sub-sternal chest discomfort radiating to his left jaw and left arm. Onset occurred while climbing stairs, lasting approximately 45 minutes.\nPHYSICAL EXAMINATION: Blood pressure 158/94 mmHg, heart rate 92 bpm, respiratory rate 20 bpm, SpO2 96% on ambient air. Cardiovascular exam reveals regular rate and rhythm, with an S4 gallop noted. No peripheral edema.\nDIAGNOSTIC WORKUP: Electrocardiogram (ECG) demonstrated ST-segment depression of 1.5 mm in leads V4-V6 with T-wave inversions. Serum Cardiac Troponin I was elevated at 1.82 ng/mL (reference < 0.04 ng/mL). Coronary catheterization revealed 85% stenosis of the left anterior descending (LAD) coronary artery, successfully treated with drug-eluting stent (DES) placement.\nDISCHARGE DIAGNOSIS: Non-ST Elevation Myocardial Infarction (NSTEMI); Coronary Artery Disease.\nDISCHARGE MEDICATIONS:\n1. Aspirin 81 mg oral daily.\n2. Ticagrelor (Brilinta) 90 mg oral twice daily.\n3. Atorvastatin 80 mg oral once daily at bedtime.\n4. Metoprolol Tartrate 25 mg oral twice daily.\n5. Sublingual Nitroglycerin 0.4 mg PRN every 5 minutes for acute chest pain (maximum 3 doses).\nDISCHARGE INSTRUCTIONS: Strict low-sodium, heart-healthy diet. Avoid strenuous exertion for 2 weeks. Follow up with outpatient cardiology in 10 days. Report immediately to the emergency room for recurrent chest pain, syncope, or severe dyspnea."
     },
     "latest_report": {
       "title": "Cardiology: 14-Day Post-DES Stent Follow-Up & Biomarker Resolution",
@@ -38,7 +38,7 @@
       "title": "Neurology: Acute Ischemic Stroke Evaluation (Emergency Admission)",
       "date": "2026-09-18",
       "type": "Emergency Inpatient Admission",
-      "text": "PATIENT CLINICAL RECORD - DISCHARGE SUMMARY\nPATIENT DEMOGRAPHICS: 64-year-old female.\nCHIEF COMPLAINT: Acute onset of right upper extremity weakness and speech difficulty.\nHISTORY OF PRESENT ILLNESS: The patient was in her usual state of health until approximately 08:30 AM when family noticed facial asymmetry, slurred speech, and weakness in her right arm and leg. NIH Stroke Scale score upon presentation was 9.\nPHYSICAL EXAMINATION: Alert and oriented x 3. Motor strength: Right upper extremity 3/5, right lower extremity 4/5. Left extremities 5/5. Mild right central facial palsy. Expressive dysphasia with intact comprehension. Blood pressure 172/98 mmHg, heart rate 86 bpm.\nDIAGNOSTIC WORKUP: Non-contrast head CT showed no acute intracranial hemorrhage. Brain MRI (DWI) demonstrated restricted diffusion in the left middle cerebral artery (MCA) territory consistent with acute ischemic infarction. Carotid Doppler ultrasound showed 60% stenosis of the left internal carotid artery. Echocardiogram revealed normal ejection fraction without intracardiac thrombus.\nDISCHARGE DIAGNOSIS: Acute Ischemic Cerebrovascular Accident (Left MCA Territory); Left Carotid Artery Atherosclerosis.\nDISCHARGE MEDICATIONS:\n1. Clopidogrel (Plavix) 75 mg oral daily.\n2. Aspirin 81 mg oral daily.\n3. Rosuvastatin 40 mg oral daily at bedtime.\n4. Lisinopril 10 mg oral daily for blood pressure control.\nDISCHARGE INSTRUCTIONS: Home physical therapy and speech therapy 3 times weekly. Strict blood pressure monitoring (target < 130/80 mmHg). Emergent hospital return precautions given for FAST symptoms: Facial droop, Arm weakness, Speech difficulty, or sudden loss of balance."
+      "text": "PATIENT CLINICAL RECORD - DISCHARGE SUMMARY\nPATIENT: Eleanor Brooks | MRN: PT-2026-7129 | AGE: 64 | GENDER: Female | WARD: Neurological Intensive Care\nCHIEF COMPLAINT: Acute onset of right upper extremity weakness and speech difficulty.\nHISTORY OF PRESENT ILLNESS: The patient was in her usual state of health until approximately 08:30 AM when family noticed facial asymmetry, slurred speech, and weakness in her right arm and leg. NIH Stroke Scale score upon presentation was 9.\nPHYSICAL EXAMINATION: Alert and oriented x 3. Motor strength: Right upper extremity 3/5, right lower extremity 4/5. Left extremities 5/5. Mild right central facial palsy. Expressive dysphasia with intact comprehension. Blood pressure 172/98 mmHg, heart rate 86 bpm.\nDIAGNOSTIC WORKUP: Non-contrast head CT showed no acute intracranial hemorrhage. Brain MRI (DWI) demonstrated restricted diffusion in the left middle cerebral artery (MCA) territory consistent with acute ischemic infarction. Carotid Doppler ultrasound showed 60% stenosis of the left internal carotid artery. Echocardiogram revealed normal ejection fraction without intracardiac thrombus.\nDISCHARGE DIAGNOSIS: Acute Ischemic Cerebrovascular Accident (Left MCA Territory); Left Carotid Artery Atherosclerosis.\nDISCHARGE MEDICATIONS:\n1. Clopidogrel (Plavix) 75 mg oral daily.\n2. Aspirin 81 mg oral daily.\n3. Rosuvastatin 40 mg oral daily at bedtime.\n4. Lisinopril 10 mg oral daily for blood pressure control.\nDISCHARGE INSTRUCTIONS: Home physical therapy and speech therapy 3 times weekly. Strict blood pressure monitoring (target < 130/80 mmHg). Emergent hospital return precautions given for FAST symptoms: Facial droop, Arm weakness, Speech difficulty, or sudden loss of balance."
     },
     "latest_report": {
       "title": "Neurology: 14-Day Post-Thrombolysis & Rehabilitation Assessment",
@@ -62,7 +62,7 @@
       "title": "Orthopedics: Right Knee Meniscal Tear (Operative Note)",
       "date": "2026-09-19",
       "type": "Operative Procedure Report",
-      "text": "OPERATIVE REPORT & POST-OPERATIVE DISCHARGE SUMMARY\nPATIENT DEMOGRAPHICS: 42-year-old male.\nPREOPERATIVE DIAGNOSIS: Complex tear of the medial meniscus, right knee; mild tricompartmental chondromalacia.\nPROCEDURE PERFORMED: Right knee arthroscopy with partial medial meniscectomy and chondroplasty.\nOPERATIVE FINDINGS: Diagnostic arthroscopy confirmed an unstable complex tear of the posterior horn and body of the medial meniscus. Joint effusion was moderate to severe (Grade 3). Knee flexion restricted to 80 degrees (active ROM 15 to 80 degrees). VAS pain score 7/10.\nPOSTOPERATIVE COURSE: The patient tolerated the procedure well. Sterile dressings were applied, followed by a compressive Ace wrap. Full weight-bearing as tolerated with crutches for comfort.\nPOSTOPERATIVE MEDICATIONS:\n1. Acetaminophen 650 mg oral every 6 hours PRN mild to moderate pain.\n2. Celecoxib (Celebrex) 200 mg oral once daily for 10 days for inflammation.\n3. Tramadol 50 mg oral every 6 hours PRN severe breakthrough pain (dispense 12 tablets).\nDISCHARGE INSTRUCTIONS: Keep dressings clean and dry for 48 hours. Cryotherapy for 20 minutes every 2 hours. Gentle ankle pumps and quadriceps sets. Suture removal scheduled in 10-14 days."
+      "text": "OPERATIVE REPORT & POST-OPERATIVE DISCHARGE SUMMARY\nPATIENT: David Miller | MRN: PT-2026-5512 | AGE: 42 | GENDER: Male | WARD: Orthopedic Surgical Care\nPREOPERATIVE DIAGNOSIS: Complex tear of the medial meniscus, right knee; mild tricompartmental chondromalacia.\nPROCEDURE PERFORMED: Right knee arthroscopy with partial medial meniscectomy and chondroplasty.\nOPERATIVE FINDINGS: Diagnostic arthroscopy confirmed an unstable complex tear of the posterior horn and body of the medial meniscus. Joint effusion was moderate to severe (Grade 3). Knee flexion restricted to 80 degrees (active ROM 15 to 80 degrees). VAS pain score 7/10.\nPOSTOPERATIVE COURSE: The patient tolerated the procedure well. Sterile dressings were applied, followed by a compressive Ace wrap. Full weight-bearing as tolerated with crutches for comfort.\nPOSTOPERATIVE MEDICATIONS:\n1. Acetaminophen 650 mg oral every 6 hours PRN mild to moderate pain.\n2. Celecoxib (Celebrex) 200 mg oral once daily for 10 days for inflammation.\n3. Tramadol 50 mg oral every 6 hours PRN severe breakthrough pain (dispense 12 tablets).\nDISCHARGE INSTRUCTIONS: Keep dressings clean and dry for 48 hours. Cryotherapy for 20 minutes every 2 hours. Gentle ankle pumps and quadriceps sets. Suture removal scheduled in 10-14 days."
     },
     "latest_report": {
       "title": "Orthopedics: 2-Week Post-Operative Suture Removal & Physical Therapy Evaluation",
@@ -86,7 +86,7 @@
       "title": "Endocrinology: Type 2 Diabetes with Neuropathy (Initial Consultation)",
       "date": "2026-09-12",
       "type": "Specialty Consultation Note",
-      "text": "CLINICAL CONSULTATION & MANAGEMENT SUMMARY\nPATIENT DEMOGRAPHICS: 51-year-old female.\nCHIEF COMPLAINT: Burning dysesthesia in bilateral feet and persistently elevated self-monitored blood glucose levels (220-280 mg/dL).\nHISTORY OF PRESENT ILLNESS: Patient has a 9-year history of Type 2 Diabetes Mellitus with sub-optimal glycemic control. She reports gradual progression of burning pain and numbness in a stocking-glove distribution over the past 8 months, worse at night. Neuropathy VAS pain score 8/10.\nPHYSICAL EXAMINATION: Bilateral foot exam reveals decreased pinprick sensation and loss of 10-gram monofilament sensation in the distal plantar surfaces. Blood pressure 144/88 mmHg.\nLABORATORY WORKUP: Glycated Hemoglobin (HbA1c) 10.4% (markedly elevated). Fasting plasma glucose 236 mg/dL. Urine albumin-to-creatinine ratio 42 mcg/mg (mild microalbuminuria). Estimated GFR 78 mL/min/1.73m2.\nDIAGNOSIS: Poorly Controlled Type 2 Diabetes Mellitus; Diabetic Peripheral Neuropathy; Early Diabetic Nephropathy.\nMEDICATION REGIMEN ADJUSTMENTS:\n1. Metformin 1000 mg oral twice daily with meals.\n2. Empagliflozin (Jardiance) 10 mg oral once daily in the morning.\n3. Basal Insulin Glargine (Lantus) 16 units subcutaneously once daily at bedtime.\n4. Gabapentin 300 mg oral once daily at bedtime for neuropathic pain.\nPLAN & PREVENTIVE GUIDELINES: Strict self-monitoring of blood glucose twice daily. Daily foot inspection."
+      "text": "CLINICAL CONSULTATION & MANAGEMENT SUMMARY\nPATIENT: Maria Gonzalez | MRN: PT-2026-4421 | AGE: 51 | GENDER: Female | WARD: Endocrine & Metabolic Care\nCHIEF COMPLAINT: Burning dysesthesia in bilateral feet and persistently elevated self-monitored blood glucose levels (220-280 mg/dL).\nHISTORY OF PRESENT ILLNESS: Patient has a 9-year history of Type 2 Diabetes Mellitus with sub-optimal glycemic control. She reports gradual progression of burning pain and numbness in a stocking-glove distribution over the past 8 months, worse at night. Neuropathy VAS pain score 8/10.\nPHYSICAL EXAMINATION: Bilateral foot exam reveals decreased pinprick sensation and loss of 10-gram monofilament sensation in the distal plantar surfaces. Blood pressure 144/88 mmHg.\nLABORATORY WORKUP: Glycated Hemoglobin (HbA1c) 10.4% (markedly elevated). Fasting plasma glucose 236 mg/dL. Urine albumin-to-creatinine ratio 42 mcg/mg (mild microalbuminuria). Estimated GFR 78 mL/min/1.73m2.\nDIAGNOSIS: Poorly Controlled Type 2 Diabetes Mellitus; Diabetic Peripheral Neuropathy; Early Diabetic Nephropathy.\nMEDICATION REGIMEN ADJUSTMENTS:\n1. Metformin 1000 mg oral twice daily with meals.\n2. Empagliflozin (Jardiance) 10 mg oral once daily in the morning.\n3. Basal Insulin Glargine (Lantus) 16 units subcutaneously once daily at bedtime.\n4. Gabapentin 300 mg oral once daily at bedtime for neuropathic pain.\nPLAN & PREVENTIVE GUIDELINES: Strict self-monitoring of blood glucose twice daily. Daily foot inspection."
     },
     "latest_report": {
       "title": "Endocrinology: 3-Week Glycemic & Neuropathy Titration Re-Check",
@@ -141,92 +141,6 @@
       "date": "2026-10-02",
       "type": "Pulmonary Follow-Up Report",
       "text": "PULMONARY CLINICAL MEDICINE - DAY 10 POST-ANTIBIOTIC EVALUATION\nPATIENT: Clara Higgins | MRN: PT-2026-9045 | AGE: 67 | GENDER: Female\nATTENDING PULMONOLOGIST: Dr. Elena Rostova, MD | DATE OF VISIT: 2026-10-02\nINTERVAL HISTORY: Patient returns for post-treatment follow-up following completion of 10 days of intravenous Ceftriaxone and oral Azithromycin for severe right lower lobe lobar pneumonia. Patient is clinically afebrile for 7 consecutive days (Temperature 98.6°F). Pleuritic chest pain and purulent sputum are completely resolved.\nPHYSICAL EXAMINATION: In no respiratory distress. SpO2 is 97% on ambient air (improved from 89%). Respiratory rate is 16 breaths per minute. Chest auscultation reveals clear vesicular breath sounds bilaterally with only minimal trace end-inspiratory crackles at the right lung base.\nLABORATORY WORKUP: White Blood Cell count (WBC) has normalized from 16.8 x10^3/uL to 7.2 x10^3/uL (infection cleared).\nFOLLOW-UP CHEST RADIOLOGY:\nRepeat thoracic imaging confirms near-complete resolution (>90% clearance) of the right lower lobe consolidation. The previous reactive pleural effusion has completely reabsorbed. No new pulmonary infiltrates.\nIMPRESSION & PLAN:\n1. Complete clinical and radiological resolution of bacterial community-acquired pneumonia.\n2. Patient is cleared for resumption of normal daily activities. Inpatient antibiotics successfully completed."
-    }
-  },
-  {
-    "id": "PT-2026-1007",
-    "name": "Benjamin Hayes",
-    "age": 67,
-    "gender": "Male",
-    "specialty": "Cardiology",
-    "ward": "Telemetry Ward Bed 302",
-    "room": "Ward Bed 1007",
-    "triage": "Standard Inpatient Review",
-    "title": "Cardiology: Benjamin Hayes",
-    "registered_at": "2026-10-02",
-    "baseline_report": {
-      "title": "Cardiology: Inpatient Admission Note (Benjamin Hayes)",
-      "date": "2026-10-02",
-      "type": "Inpatient Admission Note",
-      "text": "PATIENT CLINICAL RECORD. Chief Complaint: Exertional angina. Vital Signs: BP 164/98 mmHg, HR 88 bpm, SpO2 95%. Cardiac Troponin I: 1.45 ng/mL. Diagnosis: Acute Coronary Syndrome. Treatment: Aspirin, Clopidogrel, Atorvastatin."
-    },
-    "latest_report": {
-      "title": "Day 14 Post-Intervention Outpatient Follow-up",
-      "date": "2026-10-15",
-      "type": "Outpatient Cardiology Follow-Up",
-      "text": "PATIENT CLINICAL RECORD. Follow-up visit. Benjamin Hayes reports complete resolution of angina. Vital Signs: BP 124/80 mmHg, HR 68 bpm, SpO2 99%. Cardiac Troponin I: 0.03 ng/mL. Responsive to dual antiplatelet therapy."
-    },
-    "longitudinal_trajectory": {
-      "patient_name": "Benjamin Hayes",
-      "specialty": "Cardiology",
-      "overall_status": "Significant Clinical Improvement",
-      "trajectory_badge": "IMPROVED",
-      "badge_color": "#10b981",
-      "improved_count": 3,
-      "worsened_count": 0,
-      "stable_count": 1,
-      "total_metrics_evaluated": 4,
-      "metrics": [
-        {
-          "key": "blood_pressure",
-          "name": "Blood Pressure",
-          "category": "Vital Signs",
-          "unit": "mmHg",
-          "baseline_display": "164/98",
-          "latest_display": "124/80",
-          "delta_display": "-40 mmHg (-24.4%)",
-          "status": "IMPROVED",
-          "status_label": "Blood Pressure Controlled",
-          "color": "#10b981"
-        },
-        {
-          "key": "heart_rate",
-          "name": "Heart Rate",
-          "category": "Vital Signs",
-          "unit": "bpm",
-          "baseline_display": "88 bpm",
-          "latest_display": "68 bpm",
-          "delta_display": "-20 bpm (-22.7%)",
-          "status": "STABLE",
-          "status_label": "Monitored Metric",
-          "color": "#0284c7"
-        },
-        {
-          "key": "spo2",
-          "name": "SpO2 (Oxygen Saturation)",
-          "category": "Vital Signs",
-          "unit": "%",
-          "baseline_display": "95%",
-          "latest_display": "99%",
-          "delta_display": "+4 % (+4.2%)",
-          "status": "IMPROVED",
-          "status_label": "Increased favorably (+4.2%)",
-          "color": "#10b981"
-        },
-        {
-          "key": "troponin_i",
-          "name": "Cardiac Troponin-I",
-          "category": "Cardiac Biomarkers",
-          "unit": "ng/mL",
-          "baseline_display": "1.45 ng/mL",
-          "latest_display": "0.03 ng/mL",
-          "delta_display": "-1.42 ng/mL (-97.9%)",
-          "status": "IMPROVED",
-          "status_label": "Decreased favorably (-97.9%)",
-          "color": "#10b981"
-        }
-      ],
-      "clinical_narrative": "Serial evaluation of Benjamin Hayes demonstrates a significant clinical improvement relative to baseline admission. Favorable clinical resolution observed across 3 parameters, including Blood Pressure, SpO2 (Oxygen Saturation), Cardiac Troponin-I. No adverse biomarker deterioration detected across evaluated clinical targets."
     }
   }
 ]
