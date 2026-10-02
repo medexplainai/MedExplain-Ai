@@ -323,26 +323,36 @@ export default function PatientCarePortal({
   const lifestyle = summary.lifestyle || { dos: [], donts: [] };
   const redFlags = summary.red_flags || [];
 
-  // Group medications into 4 visual day-parts
+  // Group medications into 4 visual day-parts with comprehensive clinical keyword matching
   const morningMeds = meds.filter(m => {
     const s = (m.schedule || '').toLowerCase();
-    return s.includes('morning') || s.includes('daily') || s.includes('twice');
+    return s.includes('morning') || s.includes('daily') || s.includes('twice') || s.includes('breakfast') || s.includes('am') || s.includes('bid') || s.includes('once') || s.includes('qd');
   });
 
   const noonMeds = meds.filter(m => {
     const s = (m.schedule || '').toLowerCase();
-    return s.includes('lunch') || s.includes('noon') || s.includes('afternoon') || s.includes('every 6');
+    return s.includes('lunch') || s.includes('noon') || s.includes('afternoon') || s.includes('every 6') || s.includes('every 4') || s.includes('prn') || s.includes('needed');
   });
 
   const eveningMeds = meds.filter(m => {
     const s = (m.schedule || '').toLowerCase();
-    return s.includes('evening') || s.includes('dinner') || s.includes('twice');
+    return s.includes('evening') || s.includes('dinner') || s.includes('twice') || s.includes('bid') || s.includes('pm') || s.includes('tid');
   });
 
   const bedtimeMeds = meds.filter(m => {
     const s = (m.schedule || '').toLowerCase();
-    return s.includes('bedtime') || s.includes('night') || s.includes('qhs');
+    return s.includes('bedtime') || s.includes('night') || s.includes('qhs') || s.includes('sleep');
   });
+
+  // Critical Fail-Safe: Ensure that every single medication in meds is accounted for visually
+  const assignedMeds = new Set([
+    ...morningMeds.map(m => m.medication),
+    ...noonMeds.map(m => m.medication),
+    ...eveningMeds.map(m => m.medication),
+    ...bedtimeMeds.map(m => m.medication)
+  ]);
+  const unassignedMeds = meds.filter(m => !assignedMeds.has(m.medication));
+  const finalMorningMeds = [...morningMeds, ...unassignedMeds];
 
   // Filter Jargon terms
   const filteredJargon = useMemo(() => {
@@ -530,8 +540,8 @@ export default function PatientCarePortal({
                   </span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {morningMeds.length > 0 ? (
-                    morningMeds.map((m, i) => (
+                  {finalMorningMeds.length > 0 ? (
+                    finalMorningMeds.map((m, i) => (
                       <div key={i} style={{
                         background: '#ffffff',
                         border: '1px solid #fde68a',

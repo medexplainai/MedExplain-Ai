@@ -250,7 +250,7 @@ class DocumentParserEngine:
 
         # 5. Ward / Room / Clinical Unit Extraction
         ward_patterns = [
-            r'(?:WARD|ROOM|CLINICAL\s*WARD|DEPARTMENT|CARE\s*UNIT|UNIT|SERVICE)\s*[:\-]?\s*([^\n|,;]+)',
+            r'\b(?:WARD|ROOM|CLINICAL\s*WARD|DEPARTMENT|CARE\s*UNIT|CARE\s*SERVICE)\s*[:\-]\s*([^\n|,;\.]+)',
             r'\b(Coronary Intensive Care|Neurological Intensive Care|Orthopedic Surgical Care|Endocrine & Metabolic Care|Pathology & Diagnostic Medicine|Pulmonary Acute Care|CCU|ICU|Neuro ICU)\b'
         ]
         clean_ward = None
@@ -258,7 +258,7 @@ class DocumentParserEngine:
             ward_match = re.search(pat, text, re.IGNORECASE)
             if ward_match:
                 w = ward_match.group(1).strip()
-                if len(w) > 2 and not w.lower().startswith(("summary", "note", "not")):
+                if len(w) > 2 and not w.lower().startswith(("summary", "note", "not", "air")):
                     clean_ward = w
                     break
 

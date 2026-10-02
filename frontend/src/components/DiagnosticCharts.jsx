@@ -95,7 +95,7 @@ export default function DiagnosticCharts({ classification, entities }) {
                   </span>
                 ))
               ) : (
-                <span style={{ fontSize: '12px', color: '#94a3b8' }}>Diagnostic review underway</span>
+                <span style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>None documented in this report</span>
               )}
             </div>
           </div>
@@ -114,7 +114,7 @@ export default function DiagnosticCharts({ classification, entities }) {
                   </span>
                 ))
               ) : (
-                <span style={{ fontSize: '12px', color: '#94a3b8' }}>Medication list reviewed</span>
+                <span style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>No prescription medications documented</span>
               )}
             </div>
           </div>
