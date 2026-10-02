@@ -16,6 +16,9 @@ import ClinicalIntakeLanding from './components/ClinicalIntakeLanding';
 import AuthScreen from './components/AuthScreen';
 import DoctorPatientSearch from './components/DoctorPatientSearch';
 import PatientDashboardView from './components/PatientDashboardView';
+import LongitudinalComparisonModal from './components/LongitudinalComparisonModal';
+import RegisterPatientModal from './components/RegisterPatientModal';
+import UploadFollowupModal from './components/UploadFollowupModal';
 
 import {
   FileText,
@@ -35,7 +38,12 @@ import {
   Cpu,
   FileCheck2,
   Activity,
-  ArrowLeft
+  ArrowLeft,
+  TrendingUp,
+  TrendingDown,
+  UserPlus,
+  UploadCloud,
+  CheckCircle2
 } from 'lucide-react';
 
 export default function App() {
@@ -59,6 +67,12 @@ export default function App() {
   });
 
   const [samples, setSamples] = useState([]);
+  const [activePatient, setActivePatient] = useState(null);
+  const [activeReportType, setActiveReportType] = useState('baseline'); // 'baseline' | 'latest'
+  const [isLongitudinalModalOpen, setIsLongitudinalModalOpen] = useState(false);
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [isUploadFollowupModalOpen, setIsUploadFollowupModalOpen] = useState(false);
+
   const [selectedCaseTitle, setSelectedCaseTitle] = useState('');
   const [activeTab, setActiveTab] = useState('tab_diagnostics');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -89,14 +103,17 @@ export default function App() {
       setSelectedCaseTitle('');
       setAnalysisResult(null);
       setCurrentText('');
+      setActivePatient(null);
     } else {
       if (samples.length > 0) {
-        const matchedCase = samples.find(s => s.patient_name === user.name) || samples[0];
+        const matchedCase = samples.find(s => (s.patient_name || s.name) === user.name) || samples[0];
+        setActivePatient(matchedCase);
+        setActiveReportType('baseline');
         setSelectedCaseTitle(matchedCase.title);
         setActiveOrganId(matchedCase.specialty || 'Cardiology');
-        analyzeText(matchedCase.text, {
-          name: matchedCase.patient_name || user.name,
-          id: matchedCase.patient_id || user.patientId,
+        analyzeText(matchedCase.baseline_report?.text || matchedCase.text, {
+          name: matchedCase.patient_name || matchedCase.name || user.name,
+          id: matchedCase.patient_id || matchedCase.id || user.patientId,
           age: matchedCase.age || user.age,
           gender: matchedCase.gender || user.gender,
           ward: matchedCase.ward || user.ward
@@ -110,6 +127,7 @@ export default function App() {
     setAnalysisResult(null);
     setSelectedCaseTitle('');
     setCurrentText('');
+    setActivePatient(null);
     try {
       localStorage.removeItem('metrohealth_user');
     } catch {}
@@ -127,11 +145,13 @@ export default function App() {
         if (sampleList.length > 0 && !analysisResult) {
           if (!currentUser || currentUser.role !== 'patient') {
             const defaultCase = sampleList[0];
+            setActivePatient(defaultCase);
+            setActiveReportType('baseline');
             setSelectedCaseTitle(defaultCase.title);
             setActiveOrganId(defaultCase.specialty || 'Cardiology');
-            analyzeText(defaultCase.text, {
-              name: defaultCase.patient_name,
-              id: defaultCase.patient_id,
+            analyzeText(defaultCase.baseline_report?.text || defaultCase.text, {
+              name: defaultCase.patient_name || defaultCase.name,
+              id: defaultCase.patient_id || defaultCase.id,
               age: defaultCase.age,
               gender: defaultCase.gender,
               ward: defaultCase.ward
@@ -147,17 +167,104 @@ export default function App() {
 
   const handleDoctorSelectPatient = (patient) => {
     setViewScreen('workstation');
+    setActivePatient(patient);
+    setActiveReportType('baseline');
     if (patient.specialty) {
       setActiveOrganId(patient.specialty);
     }
-    setSelectedCaseTitle(patient.title || `Patient Record: ${patient.patient_name}`);
-    analyzeText(patient.text, {
-      name: patient.patient_name,
-      id: patient.patient_id,
+    const reportText = patient.baseline_report?.text || patient.text;
+    setSelectedCaseTitle(patient.baseline_report?.title || patient.title || `Patient Record: ${patient.patient_name || patient.name}`);
+    analyzeText(reportText, {
+      name: patient.patient_name || patient.name,
+      id: patient.patient_id || patient.id,
       age: patient.age,
       gender: patient.gender,
       ward: patient.ward
     });
+  };
+
+  const handleSwitchReportType = (type) => {
+    if (!activePatient) return;
+    setActiveReportType(type);
+    if (type === 'latest' && activePatient.latest_report?.text) {
+      const lRep = activePatient.latest_report;
+      setSelectedCaseTitle(lRep.title || `Latest Follow-Up: ${activePatient.name || activePatient.patient_name}`);
+      analyzeText(lRep.text, {
+        name: activePatient.name || activePatient.patient_name,
+        id: activePatient.id || activePatient.patient_id,
+        age: activePatient.age,
+        gender: activePatient.gender,
+        ward: activePatient.ward
+      });
+    } else {
+      const bRep = activePatient.baseline_report;
+      const bText = bRep?.text || activePatient.text;
+      setSelectedCaseTitle(bRep?.title || activePatient.title || `Baseline Report: ${activePatient.name || activePatient.patient_name}`);
+      analyzeText(bText, {
+        name: activePatient.name || activePatient.patient_name,
+        id: activePatient.id || activePatient.patient_id,
+        age: activePatient.age,
+        gender: activePatient.gender,
+        ward: activePatient.ward
+      });
+    }
+  };
+
+  const handlePatientRegistered = (newPatient) => {
+    const formatted = {
+      id: newPatient.id,
+      patient_id: newPatient.id,
+      name: newPatient.name,
+      patient_name: newPatient.name,
+      title: newPatient.title,
+      specialty: newPatient.specialty,
+      age: newPatient.age,
+      gender: newPatient.gender,
+      ward: newPatient.ward,
+      room: newPatient.room,
+      triage: newPatient.triage,
+      text: newPatient.baseline_report?.text || newPatient.text,
+      baseline_report: newPatient.baseline_report,
+      latest_report: newPatient.latest_report,
+      longitudinal_trajectory: newPatient.longitudinal_trajectory,
+      has_followup: false
+    };
+
+    setSamples(prev => [formatted, ...prev.filter(p => (p.id || p.patient_id) !== newPatient.id)]);
+    setActivePatient(formatted);
+    setActiveReportType('baseline');
+    setViewScreen('workstation');
+    if (formatted.specialty) {
+      setActiveOrganId(formatted.specialty);
+    }
+    setSelectedCaseTitle(formatted.title);
+    analyzeText(formatted.text, {
+      name: formatted.name,
+      id: formatted.id,
+      age: formatted.age,
+      gender: formatted.gender,
+      ward: formatted.ward
+    });
+  };
+
+  const handleFollowupAdded = (updatedPatient) => {
+    const formatted = {
+      ...activePatient,
+      ...updatedPatient,
+      has_followup: true
+    };
+    setSamples(prev => prev.map(p => (p.id === updatedPatient.id || p.patient_id === updatedPatient.id) ? formatted : p));
+    setActivePatient(formatted);
+    setActiveReportType('latest');
+    setSelectedCaseTitle(updatedPatient.latest_report?.title || `Latest Follow-Up: ${updatedPatient.name}`);
+    analyzeText(updatedPatient.latest_report?.text, {
+      name: updatedPatient.name,
+      id: updatedPatient.id,
+      age: updatedPatient.age,
+      gender: updatedPatient.gender,
+      ward: updatedPatient.ward
+    });
+    setIsLongitudinalModalOpen(true);
   };
 
   const analyzeText = async (text, patientMeta = {}) => {
@@ -528,8 +635,14 @@ export default function App() {
         {/* Doctor Patient Registry Search & Quick Report Fetcher */}
         <DoctorPatientSearch
           samples={samples}
-          activePatientName={analysisResult?.patient?.name || (samples.find(s => s.title === selectedCaseTitle)?.patient_name)}
+          activePatientName={analysisResult?.patient?.name || activePatient?.name || activePatient?.patient_name}
+          activePatient={activePatient}
+          activeReportType={activeReportType}
           onSelectPatient={handleDoctorSelectPatient}
+          onSwitchReportType={handleSwitchReportType}
+          onOpenRegisterModal={() => setIsRegisterModalOpen(true)}
+          onOpenFollowupModal={() => setIsUploadFollowupModalOpen(true)}
+          onOpenLongitudinalModal={() => setIsLongitudinalModalOpen(true)}
           isAnalyzing={isAnalyzing}
         />
 
@@ -693,6 +806,86 @@ export default function App() {
 
             {docType === 'Radiology & Imaging Report' && analysisResult?.imaging_results && (
               <RadiologyVisualizer imagingResults={analysisResult.imaging_results} />
+            )}
+
+            {/* Inline Longitudinal Serial Tracking Banner */}
+            {activePatient?.longitudinal_trajectory && (
+              <div style={{
+                background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                borderRadius: '14px',
+                padding: '16px 20px',
+                marginBottom: '22px',
+                color: '#ffffff',
+                border: '1.5px solid #334155',
+                boxShadow: '0 4px 16px rgba(15, 23, 42, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '14px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #0d9488 0%, #059669 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    flexShrink: 0
+                  }}>
+                    <Activity size={22} />
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '14px', fontWeight: 800, color: '#f8fafc' }}>
+                        Serial Report Comparison & Biomarker Trajectory: {activePatient.name || activePatient.patient_name}
+                      </span>
+                      <span style={{
+                        background: activePatient.longitudinal_trajectory.trajectory_badge === 'IMPROVED' ? '#ecfdf5' : activePatient.longitudinal_trajectory.trajectory_badge === 'WORSENED' ? '#fef2f2' : '#eff6ff',
+                        color: activePatient.longitudinal_trajectory.trajectory_badge === 'IMPROVED' ? '#047857' : activePatient.longitudinal_trajectory.trajectory_badge === 'WORSENED' ? '#b91c1c' : '#1d4ed8',
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        padding: '2px 9px',
+                        borderRadius: '999px',
+                        border: `1px solid ${activePatient.longitudinal_trajectory.trajectory_badge === 'IMPROVED' ? '#a7f3d0' : activePatient.longitudinal_trajectory.trajectory_badge === 'WORSENED' ? '#fecaca' : '#bfdbfe'}`
+                      }}>
+                        STATUS: {activePatient.longitudinal_trajectory.trajectory_badge}
+                      </span>
+                      <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                        ({activePatient.longitudinal_trajectory.overall_status})
+                      </span>
+                    </div>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '12.5px', color: '#cbd5e1', lineHeight: '1.4' }}>
+                      {activePatient.longitudinal_trajectory.clinical_narrative}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setIsLongitudinalModalOpen(true)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 18px',
+                    borderRadius: '8px',
+                    background: '#38bdf8',
+                    color: '#0f172a',
+                    border: 'none',
+                    fontSize: '12.5px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(56, 189, 248, 0.3)',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  <Activity size={15} />
+                  <span>View Delta Comparisons ({activePatient.longitudinal_trajectory.metrics?.length || 0} Markers)</span>
+                </button>
+              </div>
             )}
 
             {/* Primary Workflow Tabs & Download Action */}
@@ -1096,6 +1289,31 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Longitudinal Comparison Modal */}
+      <LongitudinalComparisonModal
+        isOpen={isLongitudinalModalOpen}
+        onClose={() => setIsLongitudinalModalOpen(false)}
+        patient={activePatient}
+        activeReportType={activeReportType}
+        onSwitchReport={handleSwitchReportType}
+        onOpenUploadFollowup={() => setIsUploadFollowupModalOpen(true)}
+      />
+
+      {/* Register New Inpatient Modal */}
+      <RegisterPatientModal
+        isOpen={isRegisterModalOpen}
+        onClose={() => setIsRegisterModalOpen(false)}
+        onPatientRegistered={handlePatientRegistered}
+      />
+
+      {/* Upload Follow-Up Report Modal */}
+      <UploadFollowupModal
+        isOpen={isUploadFollowupModalOpen}
+        onClose={() => setIsUploadFollowupModalOpen(false)}
+        patient={activePatient}
+        onFollowupAdded={handleFollowupAdded}
+      />
     </div>
   );
 }

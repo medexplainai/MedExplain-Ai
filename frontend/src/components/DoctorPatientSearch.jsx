@@ -10,13 +10,27 @@ import {
   Filter,
   UserCheck,
   Stethoscope,
-  X
+  X,
+  UserPlus,
+  UploadCloud,
+  Calendar,
+  Layers,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  AlertTriangle
 } from 'lucide-react';
 
 export default function DoctorPatientSearch({
   samples = [],
   activePatientName,
+  activePatient,
+  activeReportType = 'baseline',
   onSelectPatient,
+  onSwitchReportType,
+  onOpenRegisterModal,
+  onOpenFollowupModal,
+  onOpenLongitudinalModal,
   isAnalyzing
 }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,7 +42,9 @@ export default function DoctorPatientSearch({
     const q = searchQuery.toLowerCase().trim();
     return samples.filter(s =>
       (s.patient_name && s.patient_name.toLowerCase().includes(q)) ||
+      (s.name && s.name.toLowerCase().includes(q)) ||
       (s.patient_id && s.patient_id.toLowerCase().includes(q)) ||
+      (s.id && s.id.toLowerCase().includes(q)) ||
       (s.specialty && s.specialty.toLowerCase().includes(q)) ||
       (s.title && s.title.toLowerCase().includes(q))
     );
@@ -37,7 +53,7 @@ export default function DoctorPatientSearch({
   const handlePatientClick = (patient) => {
     onSelectPatient(patient);
     setIsDropdownOpen(false);
-    setSearchQuery(patient.patient_name || '');
+    setSearchQuery(patient.patient_name || patient.name || '');
   };
 
   const getSpecialtyColor = (spec) => {
@@ -51,6 +67,22 @@ export default function DoctorPatientSearch({
       default: return { bg: '#eff6ff', border: '#bfdbfe', text: '#1d4ed8', badge: '#2563eb' };
     }
   };
+
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'IMPROVED':
+        return { bg: '#ecfdf5', border: '#a7f3d0', text: '#047857', icon: <CheckCircle2 size={12} color="#059669" /> };
+      case 'WORSENED':
+        return { bg: '#fef2f2', border: '#fecaca', text: '#b91c1c', icon: <AlertTriangle size={12} color="#dc2626" /> };
+      case 'STABLE':
+      default:
+        return { bg: '#eff6ff', border: '#bfdbfe', text: '#1d4ed8', icon: <Minus size={12} color="#2563eb" /> };
+    }
+  };
+
+  const currentTraj = activePatient?.longitudinal_trajectory;
+  const currentBadge = currentTraj ? getStatusBadge(currentTraj.trajectory_badge) : null;
+  const hasFollowup = !!(activePatient?.latest_report && activePatient.latest_report.text);
 
   return (
     <div style={{
@@ -81,7 +113,7 @@ export default function DoctorPatientSearch({
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                Doctor Patient Record Registry & Lookup
+                Doctor Patient Registry & Longitudinal Tracking
               </h3>
               <span style={{
                 background: '#eff6ff',
@@ -92,32 +124,220 @@ export default function DoctorPatientSearch({
                 borderRadius: '999px',
                 border: '1px solid #bfdbfe'
               }}>
-                Live Hospital Database
+                Live Hospital Registry ({samples.length} Inpatients)
               </span>
             </div>
             <p style={{ fontSize: '12px', color: '#64748b', margin: '2px 0 0 0' }}>
-              Search any patient by name or MRN to instantly fetch their clinical notes, diagnostic telemetry, and explainable AI heatmaps.
+              Inspect baseline admission notes, track serial follow-up biomarker deltas, and register new inpatients dynamically.
             </p>
           </div>
         </div>
 
-        {activePatientName && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            background: '#f0fdf4',
-            border: '1px solid #bbf7d0',
-            padding: '6px 14px',
-            borderRadius: '999px'
-          }}>
-            <UserCheck size={14} color="#16a34a" />
-            <span style={{ fontSize: '12px', color: '#166534', fontWeight: 700 }}>
-              Active Patient: <strong>{activePatientName}</strong>
-            </span>
-          </div>
-        )}
+        {/* Action Buttons: Register New Patient & Active Patient Badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          {onOpenRegisterModal && (
+            <button
+              onClick={onOpenRegisterModal}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '7px 14px',
+                borderRadius: '999px',
+                background: 'linear-gradient(135deg, #0d9488 0%, #059669 100%)',
+                color: '#ffffff',
+                border: 'none',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(13, 148, 136, 0.25)',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+            >
+              <UserPlus size={14} />
+              <span>+ Register New Inpatient</span>
+            </button>
+          )}
+
+          {activePatientName && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              padding: '6px 14px',
+              borderRadius: '999px'
+            }}>
+              <UserCheck size={14} color="#16a34a" />
+              <span style={{ fontSize: '12px', color: '#166534', fontWeight: 700 }}>
+                Active: <strong>{activePatientName}</strong>
+              </span>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Active Patient Report Selector & Longitudinal Quick Banner */}
+      {activePatient && (
+        <div style={{
+          background: '#ffffff',
+          border: '1.5px solid #e2e8f0',
+          borderRadius: '12px',
+          padding: '12px 16px',
+          marginBottom: '14px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px'
+        }}>
+          {/* Left: Report Toggle (Baseline vs Latest) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+              Report In View:
+            </span>
+            <button
+              onClick={() => onSwitchReportType && onSwitchReportType('baseline')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '5px 12px',
+                borderRadius: '8px',
+                fontSize: '12px',
+                fontWeight: activeReportType === 'baseline' ? 800 : 600,
+                border: activeReportType === 'baseline' ? '1.5px solid #2563eb' : '1px solid #cbd5e1',
+                background: activeReportType === 'baseline' ? '#eff6ff' : '#f8fafc',
+                color: activeReportType === 'baseline' ? '#1d4ed8' : '#475569',
+                cursor: 'pointer'
+              }}
+            >
+              <FileText size={13} color={activeReportType === 'baseline' ? '#2563eb' : '#64748b'} />
+              <span>Baseline Admission Report</span>
+            </button>
+
+            {hasFollowup ? (
+              <button
+                onClick={() => onSwitchReportType && onSwitchReportType('latest')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '5px 12px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: activeReportType === 'latest' ? 800 : 600,
+                  border: activeReportType === 'latest' ? '1.5px solid #059669' : '1px solid #cbd5e1',
+                  background: activeReportType === 'latest' ? '#ecfdf5' : '#f8fafc',
+                  color: activeReportType === 'latest' ? '#047857' : '#475569',
+                  cursor: 'pointer'
+                }}
+              >
+                <Activity size={13} color={activeReportType === 'latest' ? '#059669' : '#64748b'} />
+                <span>Latest Follow-Up Report</span>
+                <span style={{
+                  fontSize: '10px',
+                  background: '#10b981',
+                  color: '#ffffff',
+                  padding: '1px 6px',
+                  borderRadius: '999px',
+                  fontWeight: 800
+                }}>
+                  Day 14
+                </span>
+              </button>
+            ) : (
+              <button
+                onClick={onOpenFollowupModal}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '5px 12px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  border: '1px dashed #0d9488',
+                  background: '#f0fdfa',
+                  color: '#0f766e',
+                  cursor: 'pointer'
+                }}
+              >
+                <UploadCloud size={13} />
+                <span>+ Upload Follow-Up Report</span>
+              </button>
+            )}
+          </div>
+
+          {/* Right: Longitudinal Trajectory & Delta Comparison Button */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {hasFollowup && currentBadge ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  background: currentBadge.bg,
+                  color: currentBadge.text,
+                  border: `1px solid ${currentBadge.border}`,
+                  padding: '4px 10px',
+                  borderRadius: '999px',
+                  fontSize: '11px',
+                  fontWeight: 800
+                }}>
+                  {currentBadge.icon}
+                  <span>Trajectory: {currentTraj.trajectory_badge}</span>
+                </span>
+
+                <button
+                  onClick={onOpenLongitudinalModal}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 14px',
+                    borderRadius: '8px',
+                    background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 6px rgba(15, 23, 42, 0.2)'
+                  }}
+                >
+                  <Activity size={14} color="#38bdf8" />
+                  <span>Compare Previous vs. Latest ({currentTraj.metrics?.length || 0} Deltas)</span>
+                  <ArrowRight size={13} />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={onOpenFollowupModal}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 14px',
+                  borderRadius: '8px',
+                  background: '#f1f5f9',
+                  color: '#334155',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                <UploadCloud size={14} />
+                <span>Add Latest Test to Compare</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Search Input Bar */}
       <div style={{ position: 'relative', marginBottom: '14px' }}>
@@ -206,18 +426,23 @@ export default function DoctorPatientSearch({
             overflowY: 'auto',
             padding: '8px'
           }}>
-            <div style={{ padding: '6px 10px', fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', borderBottom: '1px solid #f1f5f9' }}>
-              Matching Hospital Patient Records ({filteredPatients.length})
+            <div style={{ padding: '6px 10px', fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between' }}>
+              <span>Matching Hospital Patient Records ({filteredPatients.length})</span>
+              <span>Baseline + Latest Reports</span>
             </div>
 
             {filteredPatients.length === 0 ? (
               <div style={{ padding: '20px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
-                No patient matching "{searchQuery}" found. Try searching by full name or MRN.
+                No patient matching "{searchQuery}" found. Try searching by full name or MRN, or register a new inpatient.
               </div>
             ) : (
               filteredPatients.map((patient, idx) => {
                 const color = getSpecialtyColor(patient.specialty);
-                const isSelected = activePatientName === patient.patient_name;
+                const isSelected = activePatientName === (patient.patient_name || patient.name);
+                const pTraj = patient.longitudinal_trajectory;
+                const pBadge = pTraj ? getStatusBadge(pTraj.trajectory_badge) : null;
+                const pHasLatest = !!(patient.latest_report && patient.latest_report.text);
+
                 return (
                   <div
                     key={idx}
@@ -255,15 +480,15 @@ export default function DoctorPatientSearch({
                         fontSize: '13px',
                         color: color.text
                       }}>
-                        {patient.patient_name ? patient.patient_name.split(' ').map(n => n[0]).join('') : 'PT'}
+                        {(patient.patient_name || patient.name) ? (patient.patient_name || patient.name).split(' ').map(n => n[0]).join('') : 'PT'}
                       </div>
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                           <span style={{ fontSize: '13.5px', fontWeight: 800, color: '#0f172a' }}>
-                            {patient.patient_name || 'Inpatient Case'}
+                            {patient.patient_name || patient.name || 'Inpatient Case'}
                           </span>
                           <span style={{ fontSize: '11px', color: '#64748b', fontFamily: 'JetBrains Mono, monospace' }}>
-                            {patient.patient_id}
+                            {patient.patient_id || patient.id}
                           </span>
                           <span style={{
                             fontSize: '10.5px',
@@ -276,15 +501,32 @@ export default function DoctorPatientSearch({
                           }}>
                             {patient.specialty}
                           </span>
+                          {pBadge && (
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '1px 7px',
+                              borderRadius: '999px',
+                              fontSize: '10.5px',
+                              fontWeight: 800,
+                              background: pBadge.bg,
+                              color: pBadge.text,
+                              border: `1px solid ${pBadge.border}`
+                            }}>
+                              {pBadge.icon}
+                              <span>{pTraj.trajectory_badge}</span>
+                            </span>
+                          )}
                         </div>
                         <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
-                          Age: <strong>{patient.age || '55'} {patient.gender}</strong> • Ward: <strong>{patient.ward || 'General'}</strong> • {patient.triage || 'Standard'}
+                          Age: <strong>{patient.age || '55'} {patient.gender}</strong> • Ward: <strong>{patient.ward || 'General'}</strong> • {pHasLatest ? '2 Reports (Baseline + Latest Follow-Up)' : '1 Report (Baseline Admission)'}
                         </div>
                       </div>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#2563eb' }}>
-                      <span>Fetch Report</span>
+                      <span>Fetch Record</span>
                       <ArrowRight size={13} />
                     </div>
                   </div>
@@ -297,13 +539,22 @@ export default function DoctorPatientSearch({
 
       {/* Quick Select Patient Chips */}
       <div>
-        <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '8px' }}>
-          Quick Patient Selector (1-Click Instant Report Fetch):
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+            Quick Patient Selector ({samples.length} Inpatients Available):
+          </span>
+          <span style={{ fontSize: '11px', color: '#0d9488', fontWeight: 600 }}>
+            Includes Baseline Admission & Serial Follow-Up Reports
+          </span>
         </div>
+
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
           {samples.map((s, idx) => {
-            const isCurrent = activePatientName === s.patient_name;
+            const isCurrent = activePatientName === (s.patient_name || s.name);
             const color = getSpecialtyColor(s.specialty);
+            const traj = s.longitudinal_trajectory;
+            const trajBadge = traj ? getStatusBadge(traj.trajectory_badge) : null;
+
             return (
               <button
                 key={idx}
@@ -330,8 +581,21 @@ export default function DoctorPatientSearch({
                   borderRadius: '50%',
                   background: isCurrent ? color.badge : '#94a3b8'
                 }} />
-                <span>{s.patient_name || s.title}</span>
+                <span>{s.patient_name || s.name || s.title}</span>
                 <span style={{ fontSize: '10.5px', opacity: 0.75 }}>({s.specialty})</span>
+                {trajBadge && (
+                  <span style={{
+                    fontSize: '9.5px',
+                    fontWeight: 800,
+                    padding: '1px 5px',
+                    borderRadius: '999px',
+                    background: trajBadge.bg,
+                    color: trajBadge.text,
+                    border: `1px solid ${trajBadge.border}`
+                  }}>
+                    {traj.trajectory_badge}
+                  </span>
+                )}
               </button>
             );
           })}

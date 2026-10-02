@@ -26,6 +26,8 @@ from models.explainability_engine import explainability_engine
 from models.summarizer_engine import summarizer_engine
 from models.fact_checker_engine import fact_checker_engine
 from models.document_parser_engine import document_parser_engine
+from models.patient_registry_engine import patient_registry_engine
+from models.longitudinal_engine import longitudinal_engine
 from data.sample_notes import SAMPLE_CLINICAL_NOTES
 from utils.discharge_pdf import generate_hospital_discharge_docx
 
@@ -52,6 +54,44 @@ class AnalyzeRequest(BaseModel):
     gender: Optional[str] = None
     ward: Optional[str] = None
 
+class PatientCreateRequest(BaseModel):
+    name: Optional[str] = None
+    id: Optional[str] = None
+    age: Optional[Union[int, str]] = None
+    gender: Optional[str] = None
+    ward: Optional[str] = None
+    room: Optional[str] = None
+    specialty: Optional[str] = None
+    triage: Optional[str] = None
+    title: Optional[str] = None
+    text: str
+
+class FollowupRequest(BaseModel):
+    title: Optional[str] = None
+    date: Optional[str] = None
+    type: Optional[str] = None
+    text: str
+
+class CompareRequest(BaseModel):
+    patient_name: Optional[str] = "Inpatient Case"
+    specialty: Optional[str] = "General Medicine"
+    baseline_text: str
+    latest_text: str
+
+def extract_text_from_file_bytes(contents: bytes, filename: str) -> str:
+    """Helper to extract clean text from PDF, DOCX, or text files."""
+    filename_lower = filename.lower()
+    if filename_lower.endswith(".pdf"):
+        pdf_stream = io.BytesIO(contents)
+        reader = PdfReader(pdf_stream)
+        return "\n".join([page.extract_text() or "" for page in reader.pages])
+    elif filename_lower.endswith(".docx"):
+        docx_stream = io.BytesIO(contents)
+        doc = docx.Document(docx_stream)
+        return "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
+    else:
+        return contents.decode("utf-8", errors="ignore")
+
 @app.get("/api/health")
 def health_check():
     return {
@@ -66,18 +106,62 @@ def health_check():
 
 @app.get("/api/samples")
 def get_sample_cases():
+    """
+    Returns registered patients from the persistent registry (including baseline and latest reports).
+    Falls back gracefully to benchmark notes if registry is unavailable.
+    """
+    try:
+        registered_patients = patient_registry_engine.get_all_patients()
+    except Exception as e:
+        registered_patients = []
+
+    if registered_patients:
+        samples_list = []
+        for p in registered_patients:
+            b_rep = p.get("baseline_report") or {}
+            l_rep = p.get("latest_report")
+            b_text = b_rep.get("text") or p.get("text", "")
+            samples_list.append({
+                "id": p.get("id", "PT-0000"),
+                "patient_id": p.get("id", "PT-0000"),
+                "name": p.get("name", "Anonymous"),
+                "patient_name": p.get("name", "Anonymous"),
+                "title": p.get("title", f"{p.get('specialty', 'Clinical')}: {p.get('name', 'Inpatient')}"),
+                "specialty": p.get("specialty", "General Medicine"),
+                "age": p.get("age", 55),
+                "gender": p.get("gender", "M/F"),
+                "ward": p.get("ward", "Inpatient"),
+                "room": p.get("room", "Room 101"),
+                "triage": p.get("triage", "Standard Review"),
+                "registered_at": p.get("registered_at", "2026-10-01"),
+                "text": b_text,
+                "baseline_report": b_rep,
+                "latest_report": l_rep,
+                "longitudinal_trajectory": p.get("longitudinal_trajectory"),
+                "has_followup": bool(l_rep and l_rep.get("text"))
+            })
+        return {"samples": samples_list}
+
+    # Fallback to SAMPLE_CLINICAL_NOTES
     samples_list = []
     for title, data in SAMPLE_CLINICAL_NOTES.items():
         samples_list.append({
             "title": title,
             "specialty": data.get("specialty", "General Medicine"),
             "patient_name": data.get("patient_name", "Anonymous"),
+            "name": data.get("patient_name", "Anonymous"),
             "patient_id": data.get("patient_id", "PT-0000"),
+            "id": data.get("patient_id", "PT-0000"),
             "age": data.get("age", 50),
             "gender": data.get("gender", "M/F"),
             "ward": data.get("ward", "Inpatient"),
+            "room": "Room 101",
             "triage": data.get("triage", "Standard Review"),
-            "text": data["text"]
+            "text": data["text"],
+            "baseline_report": {"title": title, "text": data["text"]},
+            "latest_report": None,
+            "longitudinal_trajectory": None,
+            "has_followup": False
         })
     return {"samples": samples_list}
 
@@ -255,6 +339,258 @@ def download_discharge_docx(req: AnalyzeRequest):
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={"Content-Disposition": f"attachment; filename=Hospital_Discharge_{req.patient_id}.docx"}
     )
+
+@app.post("/api/patients")
+def register_new_patient(req: PatientCreateRequest):
+    if not req.text.strip():
+        raise HTTPException(status_code=400, detail="Empty clinical document text.")
+
+    clinical_text = req.text.strip()
+    is_valid, reason = document_parser_engine.is_valid_medical_document(clinical_text)
+    if not is_valid:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "NON_MEDICAL_DOCUMENT_EXCEPTION",
+                "title": "Medical Validation Exception",
+                "reason": reason,
+                "filename": req.name or "New Inpatient Registration"
+            }
+        )
+
+    # Extract metadata & specialty classification
+    meta = document_parser_engine.extract_patient_metadata(clinical_text)
+    classification = clinical_engine.classify_specialty(clinical_text)
+
+    all_current = patient_registry_engine.get_all_patients()
+    pts_count = len(all_current)
+    name = req.name or meta.get("name") or f"Inpatient Case {pts_count + 1}"
+    patient_id = req.id or meta.get("id") or f"PT-2026-{1001 + pts_count}"
+    age = req.age or meta.get("age") or 55
+    gender = req.gender or meta.get("gender") or "M/F"
+    ward = req.ward or meta.get("ward") or "Acute Medical Ward"
+    specialty = req.specialty or classification.get("top_specialty") or "General Medicine"
+    triage = req.triage or "Standard Inpatient Review"
+    title = req.title or f"{specialty}: {name}"
+    room = req.room or f"Ward Bed {patient_id[-4:] if len(patient_id) >= 4 else '101'}"
+
+    new_patient_record = {
+        "id": patient_id,
+        "name": name,
+        "age": age,
+        "gender": gender,
+        "specialty": specialty,
+        "ward": ward,
+        "room": room,
+        "triage": triage,
+        "title": title,
+        "registered_at": time.strftime("%Y-%m-%d"),
+        "baseline_report": {
+            "title": f"{specialty}: Inpatient Admission Note ({name})",
+            "date": time.strftime("%Y-%m-%d"),
+            "type": "Inpatient Admission Note",
+            "text": clinical_text
+        },
+        "latest_report": None,
+        "longitudinal_trajectory": None
+    }
+
+    saved = patient_registry_engine.add_patient(new_patient_record)
+    return {
+        "message": f"Patient {name} ({patient_id}) successfully registered in hospital database.",
+        "patient": saved
+    }
+
+@app.post("/api/patients/upload")
+async def upload_register_patient(
+    file: UploadFile = File(...),
+    name: Optional[str] = Form(None),
+    age: Optional[str] = Form(None),
+    gender: Optional[str] = Form(None),
+    ward: Optional[str] = Form(None),
+    specialty: Optional[str] = Form(None),
+    triage: Optional[str] = Form(None)
+):
+    contents = await file.read()
+    try:
+        extracted_text = extract_text_from_file_bytes(contents, file.filename)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to parse document: {str(e)}")
+
+    if not extracted_text.strip():
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "NON_MEDICAL_DOCUMENT_EXCEPTION",
+                "title": "Medical Validation Exception: Empty Document",
+                "reason": "The uploaded file contains no readable text.",
+                "filename": file.filename
+            }
+        )
+
+    is_valid, reason = document_parser_engine.is_valid_medical_document(extracted_text)
+    if not is_valid:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "NON_MEDICAL_DOCUMENT_EXCEPTION",
+                "title": "Medical Validation Exception",
+                "reason": reason,
+                "filename": file.filename
+            }
+        )
+
+    meta = document_parser_engine.extract_patient_metadata(extracted_text)
+    classification = clinical_engine.classify_specialty(extracted_text)
+
+    all_current = patient_registry_engine.get_all_patients()
+    pts_count = len(all_current)
+    patient_name = name or meta.get("name") or f"Inpatient Case {pts_count + 1}"
+    patient_id = meta.get("id") or f"PT-2026-{1001 + pts_count}"
+    patient_age = age or meta.get("age") or 55
+    patient_gender = gender or meta.get("gender") or "M/F"
+    patient_ward = ward or meta.get("ward") or "Acute Medical Ward"
+    patient_spec = specialty or classification.get("top_specialty") or "General Medicine"
+    patient_triage = triage or "Standard Inpatient Review"
+
+    new_patient_record = {
+        "id": patient_id,
+        "name": patient_name,
+        "age": patient_age,
+        "gender": patient_gender,
+        "specialty": patient_spec,
+        "ward": patient_ward,
+        "room": f"Bed {patient_id[-4:] if len(patient_id) >= 4 else '101'}",
+        "triage": patient_triage,
+        "title": f"{patient_spec}: {patient_name}",
+        "registered_at": time.strftime("%Y-%m-%d"),
+        "baseline_report": {
+            "title": f"{patient_spec}: Inpatient Admission Note ({patient_name})",
+            "date": time.strftime("%Y-%m-%d"),
+            "type": "Inpatient Admission Note",
+            "text": extracted_text
+        },
+        "latest_report": None,
+        "longitudinal_trajectory": None
+    }
+
+    saved = patient_registry_engine.add_patient(new_patient_record)
+    return {
+        "message": f"Patient {patient_name} ({patient_id}) successfully registered.",
+        "patient": saved
+    }
+
+@app.post("/api/patients/{patient_id}/followup")
+def add_patient_followup(patient_id: str, req: FollowupRequest):
+    if not req.text.strip():
+        raise HTTPException(status_code=400, detail="Empty follow-up report text.")
+
+    is_valid, reason = document_parser_engine.is_valid_medical_document(req.text)
+    if not is_valid:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "NON_MEDICAL_DOCUMENT_EXCEPTION",
+                "title": "Medical Validation Exception",
+                "reason": reason,
+                "filename": req.title or "Follow-Up Report"
+            }
+        )
+
+    updated = patient_registry_engine.add_followup_report(patient_id, {
+        "title": req.title or f"Follow-Up Report: {patient_id}",
+        "date": req.date or time.strftime("%Y-%m-%d"),
+        "type": req.type or "Serial Follow-Up Note",
+        "text": req.text
+    })
+
+    if not updated:
+        raise HTTPException(status_code=404, detail=f"Patient with ID {patient_id} not found in registry.")
+
+    return {
+        "message": f"Follow-up report successfully attached to patient {patient_id}.",
+        "patient": updated,
+        "trajectory": updated.get("longitudinal_trajectory")
+    }
+
+@app.post("/api/patients/{patient_id}/followup/upload")
+async def upload_patient_followup(
+    patient_id: str,
+    file: UploadFile = File(...),
+    title: Optional[str] = Form(None),
+    date: Optional[str] = Form(None)
+):
+    contents = await file.read()
+    try:
+        extracted_text = extract_text_from_file_bytes(contents, file.filename)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to parse document: {str(e)}")
+
+    if not extracted_text.strip():
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "NON_MEDICAL_DOCUMENT_EXCEPTION",
+                "title": "Medical Validation Exception: Empty Document",
+                "reason": "The uploaded follow-up file contains no readable text.",
+                "filename": file.filename
+            }
+        )
+
+    is_valid, reason = document_parser_engine.is_valid_medical_document(extracted_text)
+    if not is_valid:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "NON_MEDICAL_DOCUMENT_EXCEPTION",
+                "title": "Medical Validation Exception",
+                "reason": reason,
+                "filename": file.filename
+            }
+        )
+
+    updated = patient_registry_engine.add_followup_report(patient_id, {
+        "title": title or f"Follow-Up Report: {file.filename}",
+        "date": date or time.strftime("%Y-%m-%d"),
+        "type": "Serial Follow-Up Note",
+        "text": extracted_text
+    })
+
+    if not updated:
+        raise HTTPException(status_code=404, detail=f"Patient with ID {patient_id} not found in registry.")
+
+    return {
+        "message": f"Follow-up report uploaded and attached to {patient_id}.",
+        "patient": updated,
+        "trajectory": updated.get("longitudinal_trajectory")
+    }
+
+@app.post("/api/compare-reports")
+def compare_arbitrary_reports(req: CompareRequest):
+    if not req.baseline_text.strip() or not req.latest_text.strip():
+        raise HTTPException(status_code=400, detail="Both baseline and latest report texts are required for comparison.")
+
+    v1, r1 = document_parser_engine.is_valid_medical_document(req.baseline_text)
+    if not v1:
+        raise HTTPException(
+            status_code=422,
+            detail={"error": "NON_MEDICAL_DOCUMENT_EXCEPTION", "title": "Baseline Report Validation Failed", "reason": r1}
+        )
+
+    v2, r2 = document_parser_engine.is_valid_medical_document(req.latest_text)
+    if not v2:
+        raise HTTPException(
+            status_code=422,
+            detail={"error": "NON_MEDICAL_DOCUMENT_EXCEPTION", "title": "Latest Report Validation Failed", "reason": r2}
+        )
+
+    trajectory = longitudinal_engine.generate_longitudinal_trajectory(
+        patient_name=req.patient_name or "Inpatient Case",
+        specialty=req.specialty or "General Medicine",
+        baseline_text=req.baseline_text,
+        latest_text=req.latest_text
+    )
+    return trajectory
 
 # -------------------------------------------------------------
 # Mount Production React Frontend (Single-Page Application)
