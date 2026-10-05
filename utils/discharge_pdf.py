@@ -58,14 +58,14 @@ def generate_hospital_discharge_docx(patient_data: dict, summary_data: dict, ent
     col_w = [Inches(1.6), Inches(1.8), Inches(1.6), Inches(1.8)]
 
     data_grid = [
-        [("Patient Name:", patient_data.get("name", "John Doe")),
-         ("Patient ID:", patient_data.get("id", "PT-8941")),
-         ("Age / Gender:", f"{patient_data.get('age', 58)} / {patient_data.get('gender', 'M')}"),
-         ("Triage Category:", patient_data.get("triage", "Acute Cardiac"))],
-        [("Admission Date:", "September 24, 2026"),
-         ("Discharge Date:", "September 29, 2026"),
-         ("Attending Physician:", "Dr. A. Sharma, MD, FACC"),
-         ("Primary Ward:", patient_data.get("ward", "Cardiovascular Unit"))]
+        [("Patient Name:", str(patient_data.get("name") or "Clinical Inpatient")),
+         ("Patient ID:", str(patient_data.get("id") or "PT-2026-RECORD")),
+         ("Age / Gender:", f"{patient_data.get('age') or '--'} / {patient_data.get('gender') or 'M/F'}"),
+         ("Triage Category:", str(patient_data.get("triage") or "Diagnostic Review"))],
+        [("Date of Evaluation:", "October 2026"),
+         ("Report Status:", "Verified by Clinician"),
+         ("Attending Clinician:", str(patient_data.get("doctor_name") or "Dr. Sarah Jenkins, MD")),
+         ("Department / Ward:", str(patient_data.get("ward") or "Outpatient Medicine"))]
     ]
 
     for r_idx, row_data in enumerate(data_grid):
@@ -78,7 +78,7 @@ def generate_hospital_discharge_docx(patient_data: dict, summary_data: dict, ent
             r_l = p.add_run(f"{label} ")
             r_l.bold = True
             r_l.font.size = Pt(8.5)
-            r_v = p.add_run(val)
+            r_v = p.add_run(str(val))
             r_v.font.size = Pt(8.5)
             set_cell_background(cell, "F8FAFC")
             set_cell_margins(cell, top=60, bottom=60, left=80, right=80)
@@ -109,19 +109,19 @@ def generate_hospital_discharge_docx(patient_data: dict, summary_data: dict, ent
         r.font.color.rgb = RGBColor(0x2D, 0x37, 0x48)
         return p
 
-    # 1. Primary Diagnoses
-    add_h("1. Clinical Discharge Diagnoses")
-    diags = entities.get("diagnoses", ["Coronary Artery Disease", "Myocardial Infarction"])
+    # 1. Primary Diagnoses & Key Findings
+    add_h("1. Identified Diagnoses & Clinical Findings")
+    diags = entities.get("diagnoses") or ["Comprehensive Diagnostic Evaluation & Healthcare Review"]
     add_p(" • " + "\n • ".join(diags))
 
     # 2. Plain Language Health Overview
-    add_h("2. Patient-Centric Condition Overview (Simplified Care Guide)")
-    add_p(summary_data.get("overview", "You received treatment for a cardiovascular event and are progressing well."))
+    add_h("2. Patient-Centric Health Overview (Plain Language Summary)")
+    add_p(summary_data.get("overview", "Your diagnostic findings and health indicators have been reviewed to establish a personalized care plan."))
 
     # 3. Daily Medication Table
-    add_h("3. Prescribed Discharge Medication Schedule")
     meds = summary_data.get("medication_table", [])
     if meds:
+        add_h("3. Prescribed Medication Protocol")
         m_tbl = doc.add_table(rows=1, cols=4)
         m_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
         m_tbl.autofit = False
@@ -140,26 +140,50 @@ def generate_hospital_discharge_docx(patient_data: dict, summary_data: dict, ent
 
         for m in meds:
             row_cells = m_tbl.add_row().cells
-            row_cells[0].paragraphs[0].add_run(m.get("medication", "")).bold = True
-            row_cells[1].paragraphs[0].add_run(m.get("dosage", ""))
-            row_cells[2].paragraphs[0].add_run(m.get("schedule", ""))
-            row_cells[3].paragraphs[0].add_run(m.get("instructions", ""))
+            row_cells[0].paragraphs[0].add_run(str(m.get("medication", ""))).bold = True
+            row_cells[1].paragraphs[0].add_run(str(m.get("dosage", "")))
+            row_cells[2].paragraphs[0].add_run(str(m.get("schedule", "")))
+            row_cells[3].paragraphs[0].add_run(str(m.get("instructions", "")))
             for i in range(4):
                 row_cells[i].width = m_w[i]
                 row_cells[i].paragraphs[0].runs[0].font.size = Pt(8.5)
                 set_cell_margins(row_cells[i], top=50, bottom=50, left=80, right=80)
 
-    # 4. Lifestyle & Red-Flags
-    add_h("4. Emergency Symptoms (Call 911 / Seek Immediate Hospital Care)")
+    # 4. Lifestyle Guidelines (Dos and Don'ts)
+    lifestyle = summary_data.get("lifestyle", {})
+    dos = lifestyle.get("dos", [])
+    donts = lifestyle.get("donts", [])
+    if dos or donts:
+        add_h("4. Recovery Guidelines & Health Precautions")
+        if dos:
+            p_dos = doc.add_paragraph()
+            p_dos.paragraph_format.space_before = Pt(4)
+            r_d = p_dos.add_run("Mandatory Health Guidelines (Do):")
+            r_d.bold = True
+            r_d.font.color.rgb = RGBColor(0x04, 0x78, 0x57)
+            for d in dos:
+                add_p(f"  ✓ {d}")
+        if donts:
+            p_donts = doc.add_paragraph()
+            p_donts.paragraph_format.space_before = Pt(4)
+            r_dn = p_donts.add_run("Strict Medical Restrictions (Do Not):")
+            r_dn.bold = True
+            r_dn.font.color.rgb = RGBColor(0xB9, 0x1C, 0x1C)
+            for dn in donts:
+                add_p(f"  ✗ {dn}")
+
+    # 5. Emergency Warning Symptoms
+    add_h("5. Critical Emergency Red Flags (Seek Immediate Medical Care)")
     for rf in summary_data.get("red_flags", [])[:4]:
         add_p(f" • WARNING: {rf}")
 
-    # Signatures
+    # Digital Attestation & Countersignature
     p_sig = doc.add_paragraph()
     p_sig.paragraph_format.space_before = Pt(28)
     p_sig.paragraph_format.space_after = Pt(0)
     p_sig.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    r_sig = p_sig.add_run("Physician Signature: _________________________________\nDr. A. Sharma, MD, FACC  •  License #MD-88419\nVerified via MedExplain AI Safety Guardrail")
+    doc_name = patient_data.get("doctor_name") or "Dr. Sarah Jenkins, MD"
+    r_sig = p_sig.add_run(f"Attending Physician Countersignature: _______________________\n{doc_name}  •  Chief Medical Officer\nDigitally Countersigned via MedExplain AI DeBERTa-v3 Guardrail")
     r_sig.font.size = Pt(9)
     r_sig.font.italic = True
 

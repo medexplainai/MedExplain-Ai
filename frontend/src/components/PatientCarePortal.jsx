@@ -307,6 +307,7 @@ function renderCleanOverview(text, lang) {
 
 export default function PatientCarePortal({
   summary,
+  entities,
   patient,
   onDownloadDocx,
   doctorSignOff
@@ -319,7 +320,31 @@ export default function PatientCarePortal({
 
   const t = TRANSLATIONS[selectedLang] || TRANSLATIONS.en;
   const overview = summary.overview || '';
-  const meds = summary.medication_table || [];
+
+  // Medication Harmonization: Sync summary.medication_table with entities.medications
+  const baseMeds = [...(summary.medication_table || [])];
+  const existingNames = new Set(baseMeds.map(m => (m.medication || '').toLowerCase()));
+
+  if (entities?.medications && Array.isArray(entities.medications)) {
+    entities.medications.forEach(ent => {
+      if (typeof ent === 'string') {
+        const entLower = ent.toLowerCase();
+        if (![...existingNames].some(name => entLower.includes(name) || name.includes(entLower))) {
+          const doseMatch = ent.match(/(\d+(?:\.\d+)?\s*(?:mg|mcg|units|g|ml))/i);
+          const cleanDrug = ent.replace(/\s*\d+(?:\.\d+)?\s*(?:mg|mcg|units|g|ml).*/i, '').trim();
+          baseMeds.push({
+            medication: cleanDrug || ent,
+            dosage: doseMatch ? doseMatch[1] : 'Standard Dose',
+            schedule: 'Morning (08:00 AM - Once daily)',
+            instructions: 'Take as prescribed by your clinician with water.'
+          });
+          existingNames.add((cleanDrug || ent).toLowerCase());
+        }
+      }
+    });
+  }
+
+  const meds = baseMeds;
   const lifestyle = summary.lifestyle || { dos: [], donts: [] };
   const redFlags = summary.red_flags || [];
 

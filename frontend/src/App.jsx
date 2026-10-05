@@ -49,18 +49,9 @@ import {
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => {
     try {
-      const saved = localStorage.getItem('metrohealth_user');
+      const saved = localStorage.getItem('metrohealth_auth_user') || localStorage.getItem('metrohealth_user');
       if (!saved) return null;
-      const parsed = JSON.parse(saved);
-      if (parsed.role === 'patient') {
-        parsed.name = 'Patient User';
-        delete parsed.patientId;
-        delete parsed.age;
-        delete parsed.gender;
-        delete parsed.ward;
-        delete parsed.room;
-      }
-      return parsed;
+      return JSON.parse(saved);
     } catch {
       return null;
     }
@@ -95,6 +86,7 @@ export default function App() {
   const handleLogin = (user) => {
     setCurrentUser(user);
     try {
+      localStorage.setItem('metrohealth_auth_user', JSON.stringify(user));
       localStorage.setItem('metrohealth_user', JSON.stringify(user));
     } catch {}
 
@@ -129,6 +121,7 @@ export default function App() {
     setCurrentText('');
     setActivePatient(null);
     try {
+      localStorage.removeItem('metrohealth_auth_user');
       localStorage.removeItem('metrohealth_user');
     } catch {}
   };
@@ -1093,6 +1086,7 @@ export default function App() {
 
                 <PatientCarePortal
                   summary={analysisResult.summary}
+                  entities={analysisResult.entities}
                   patient={analysisResult.patient}
                   onDownloadDocx={handleDownloadDocx}
                   doctorSignOff={doctorSignOff}

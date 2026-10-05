@@ -1,0 +1,64 @@
+[
+  {
+    "id": "usr_seed_doctor_01",
+    "email": "doctor@gmail.com",
+    "name": "Dr. Sarah Jenkins, MD",
+    "role": "doctor",
+    "title": "Chief Medical Officer & Attending Physician",
+    "department": "Cardiology & Intensive Care",
+    "salt": "7abbcffc77fb15c0af9c375c4b074ea5",
+    "password_hash": "e2ded9148234aa91726080bce22213607e39f52fd68b8b81a81c9227cd87ac27",
+    "created_at": "2026-09-01T00:00:00Z"
+  },
+  {
+    "id": "usr_seed_patient_01",
+    "email": "patient@gmail.com",
+    "name": "Marcus Vance",
+    "role": "patient",
+    "title": "Registered Inpatient",
+    "age": 58,
+    "gender": "Male",
+    "salt": "f135bc066a9a9578ddad88deb545e01b",
+    "password_hash": "649c65b168320bd81e783afb0e7e6cecdeb87244250b48ced43bca75776c92b8",
+    "created_at": "2026-09-01T00:00:00Z"
+  },
+  {
+    "id": "usr_721dc590ddff94f6",
+    "email": "reventh@gmail.com",
+    "name": "D Reventh Raj",
+    "role": "patient",
+    "title": "Registered Patient",
+    "department": "Outpatient Care",
+    "age": 36,
+    "gender": "Male",
+    "salt": "20f424145c94f81255bc7cd315a9a712",
+    "password_hash": "7d7db204a3425d4c4ef7da0ff72baa0bd2df636ce3d3d8e6d7f3a73e3f04364b",
+    "created_at": "2026-10-05T13:48:55.167082Z"
+  },
+  {
+    "id": "usr_41a33d47b816a621",
+    "email": "dr.vikram@gmail.com",
+    "name": "Dr. Vikram Seth, MD",
+    "role": "doctor",
+    "title": "Attending Clinician",
+    "department": "Interventional Cardiology",
+    "age": null,
+    "gender": null,
+    "salt": "f746e2d420aaa1c47dbcd49c6b15f6d2",
+    "password_hash": "b46b748d931c938e80314eb47372b6a5f193738f822a7e13ae41d350608902d9",
+    "created_at": "2026-10-05T14:20:21.290625Z"
+  },
+  {
+    "id": "usr_a867294e3e5393ac",
+    "email": "reventh.raj@gmail.com",
+    "name": "D Reventh Raj",
+    "role": "patient",
+    "title": "Registered Patient",
+    "department": "Outpatient Care",
+    "age": 36,
+    "gender": "Male",
+    "salt": "74bae7d6c75854ec5fae6971a98728c0",
+    "password_hash": "ca3768fec5885df18c38c78f72cfe33b617b1bfd14f4506c73bfb16f907c43d4",
+    "created_at": "2026-10-05T14:20:21.327445Z"
+  }
+]

@@ -757,6 +757,7 @@ export default function PatientDashboardView({
       {/* Main Patient Care Sections */}
       <PatientCarePortal
         summary={summary}
+        entities={analysisResult?.entities}
         patient={patient}
         onDownloadDocx={onDownloadDocx}
         doctorSignOff={{

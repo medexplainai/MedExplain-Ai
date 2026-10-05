@@ -8,6 +8,7 @@ import os
 import sys
 import time
 import io
+import re
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 if BASE_DIR not in sys.path:
@@ -28,6 +29,7 @@ from models.fact_checker_engine import fact_checker_engine
 from models.document_parser_engine import document_parser_engine
 from models.patient_registry_engine import patient_registry_engine
 from models.longitudinal_engine import longitudinal_engine
+from models.auth_engine import auth_engine
 from data.sample_notes import SAMPLE_CLINICAL_NOTES
 from utils.discharge_pdf import generate_hospital_discharge_docx
 
@@ -77,6 +79,48 @@ class CompareRequest(BaseModel):
     specialty: Optional[str] = "General Medicine"
     baseline_text: str
     latest_text: str
+
+class RegisterRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+    role: Optional[str] = "patient"
+    department: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[str] = None
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+@app.post("/api/auth/register")
+def register_user_endpoint(req: RegisterRequest):
+    try:
+        profile = auth_engine.register_user(
+            name=req.name,
+            email=req.email,
+            password=req.password,
+            role=req.role or "patient",
+            department=req.department,
+            age=req.age,
+            gender=req.gender
+        )
+        return {"success": True, "user": profile, "message": "User registered successfully"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+
+@app.post("/api/auth/login")
+def login_user_endpoint(req: LoginRequest):
+    user = auth_engine.authenticate_user(req.email, req.password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password. Please verify your credentials.")
+    return {"success": True, "user": user, "message": "Login successful"}
+
+@app.get("/api/auth/users")
+def get_users_endpoint():
+    return {"users": auth_engine.get_all_users()}
 
 def extract_text_from_file_bytes(contents: bytes, filename: str) -> str:
     """Helper to extract clean text from PDF, DOCX, or text files."""
@@ -212,6 +256,21 @@ def analyze_medical_document(req: AnalyzeRequest):
         labs_parsed = document_parser_engine.parse_laboratory_report(clinical_text)
     elif doc_type == "Radiology & Imaging Report":
         imaging_parsed = document_parser_engine.parse_imaging_report(clinical_text)
+
+    # 7. Medication Harmonization Guardrail: 100% alignment between entities and summary medication table
+    existing_table_meds = {m.get("medication", "").lower() for m in summary_data.get("medication_table", [])}
+    for ent_med in entities.get("medications", []):
+        if not any(k in ent_med.lower() or ent_med.lower() in k for k in existing_table_meds):
+            m_dose = re.search(r'(\d+(?:\.\d+)?\s*(?:mg|mcg|units|g|ml))', ent_med, re.IGNORECASE)
+            dose_val = m_dose.group(1) if m_dose else "Standard Dose"
+            clean_drug = re.sub(r'\s*\d+(?:\.\d+)?\s*(?:mg|mcg|units|g|ml).*', '', ent_med, flags=re.IGNORECASE).strip()
+            summary_data.setdefault("medication_table", []).append({
+                "medication": clean_drug or ent_med,
+                "dosage": dose_val,
+                "schedule": "Morning (08:00 AM - Once daily)",
+                "instructions": "Take daily as prescribed by your clinician with water."
+            })
+            existing_table_meds.add((clean_drug or ent_med).lower())
 
     duration_ms = round((time.time() - t_start) * 1000, 1)
 

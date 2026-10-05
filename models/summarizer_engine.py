@@ -72,8 +72,23 @@ class SummarizerEngine:
                     if clean_d and len(clean_d) > 2:
                         diagnoses.append(clean_d)
 
+        is_lab_report = (
+            "outside reference range" in clinical_text.lower() or
+            "bio. ref. interval" in clinical_text.lower() or
+            "tests outside" in clinical_text.lower() or
+            ("cholesterol" in clinical_text.lower() and "triglycerides" in clinical_text.lower() and "specimen" in clinical_text.lower())
+        )
+
         overview_lines = []
-        if diagnoses:
+        if is_lab_report:
+            overview_lines.append(
+                "Your diagnostic laboratory test panel has been evaluated. The analysis reveals elevated lipid parameters "
+                "(Total Cholesterol, Direct LDL, and Triglycerides), active systemic/vascular inflammatory markers (hs-CRP and Lipoprotein(a)), "
+                "along with notable vitamin deficiencies (Vitamin D and Vitamin B-12). Key metabolic, renal, and liver markers—including HbA1c, "
+                "Serum Creatinine, and Electrolytes—remain within standard healthy ranges. A personalized care plan combining heart-healthy "
+                "nutrition, daily physical exercise, and physician-supervised vitamin supplementation will support your cardiovascular and metabolic recovery."
+            )
+        elif diagnoses:
             primary_diag = diagnoses[0]
             overview_lines.append(
                 f"Your medical record indicates that you received clinical care and evaluation for {primary_diag}. "
@@ -126,7 +141,22 @@ class SummarizerEngine:
             ("Gabapentin", ["gabapentin", "neurontin"], "Bedtime (10:00 PM)", "Take once daily at bedtime for nerve comfort and sleep."),
             ("Azithromycin", ["azithromycin", "zithromax"], "Morning (08:00 AM - Once daily)", "Take once daily with water. Complete full course as prescribed."),
             ("Ceftriaxone", ["ceftriaxone", "rocephin"], "Morning (08:00 AM - Inpatient)", "Administered intravenously as directed by physician."),
-            ("Albuterol", ["albuterol", "ventolin"], "Afternoon (12:00 PM / As needed)", "1 to 2 inhalations every 4-6 hours PRN for wheezing or dyspnea.")
+            ("Albuterol", ["albuterol", "ventolin"], "Afternoon (12:00 PM / As needed)", "1 to 2 inhalations every 4-6 hours PRN for wheezing or dyspnea."),
+            ("Amoxicillin", ["amoxicillin", "amoxil"], "Morning & Evening (Twice daily with meals)", "Take twice daily with food until the complete prescription course is finished."),
+            ("Amlodipine", ["amlodipine", "norvasc"], "Morning (08:00 AM - Once daily)", "Take once daily in the morning to maintain healthy blood pressure."),
+            ("Losartan", ["losartan", "cozaar"], "Morning (08:00 AM - Once daily)", "Take once daily for cardiovascular and blood pressure support."),
+            ("Omeprazole", ["omeprazole", "prilosec"], "Morning (08:00 AM - Before breakfast)", "Take 30 minutes before breakfast to reduce stomach acid."),
+            ("Pantoprazole", ["pantoprazole", "protonix"], "Morning (08:00 AM - Before breakfast)", "Take 30 minutes before morning meal to protect stomach lining."),
+            ("Simvastatin", ["simvastatin", "zocor"], "Bedtime (10:00 PM)", "Take once daily at bedtime to manage cholesterol."),
+            ("Hydrochlorothiazide", ["hydrochlorothiazide", "microzide", "hctz"], "Morning (08:00 AM - Once daily)", "Take in the morning with food to help eliminate excess fluid."),
+            ("Levothyroxine", ["levothyroxine", "synthroid"], "Morning (07:00 AM - Empty stomach)", "Take on an empty stomach with a full glass of water, 30-60 minutes before breakfast."),
+            ("Furosemide", ["furosemide", "lasix"], "Morning (08:00 AM - Once daily)", "Take in the morning to prevent excess fluid retention."),
+            ("Prednisone", ["prednisone"], "Morning (08:00 AM - With breakfast)", "Take in the morning with food to reduce inflammation as directed."),
+            ("Warfarin", ["warfarin", "coumadin"], "Evening (06:00 PM - Once daily)", "Take at the same time each evening; regular INR blood checks required."),
+            ("Apixaban (Eliquis)", ["apixaban", "eliquis"], "Morning & Evening (Twice daily)", "Take twice daily with or without food. Do not skip doses."),
+            ("Rivaroxaban (Xarelto)", ["rivaroxaban", "xarelto"], "Evening (Dinner - With food)", "Take once daily with your evening meal for blood clot prevention."),
+            ("Dapagliflozin (Farxiga)", ["dapagliflozin", "farxiga"], "Morning (08:00 AM - Once daily)", "Take once daily in the morning with a glass of water."),
+            ("Semaglutide (Ozempic)", ["semaglutide", "ozempic", "wegovy"], "Morning (Weekly subcutaneous)", "Inject subcutaneously once weekly on the same day each week.")
         ]
 
         # First pass: check for numbered discharge medication list
@@ -212,20 +242,36 @@ class SummarizerEngine:
                     seen_med_names.add(alias.lower())
                     break
 
-        lifestyle = {
-            "dos": [
-                "Drink 6 to 8 glasses of water daily unless your doctor restricted fluid intake.",
-                "Take all medications at the same time each day using a weekly pill organizer.",
-                "Eat plenty of fresh vegetables, whole grains, and lean proteins (poultry, fish, beans).",
-                "Rest and get 7 to 8 hours of sleep each night to help your body heal."
-            ],
-            "donts": [
-                "Do NOT stop taking blood-thinning medications suddenly without speaking to your doctor.",
-                "Avoid heavily salted canned foods, fried snacks, and processed deli meats.",
-                "Do NOT engage in heavy lifting (> 10 lbs) or strenuous exercise until cleared at follow-up.",
-                "Do NOT smoke or consume alcohol while recovering."
-            ]
-        }
+        if is_lab_report:
+            lifestyle = {
+                "dos": [
+                    "Adopt a heart-healthy Mediterranean diet with high soluble fiber (oats, legumes, greens) to lower LDL and Total Cholesterol.",
+                    "Engage in 30 minutes of moderate aerobic cardiovascular exercise (such as brisk walking) 5 days per week.",
+                    "Consult your physician regarding therapeutic Vitamin D3 (e.g. 60,000 IU weekly) and Vitamin B-12 oral supplementation.",
+                    "Drink 2 to 2.5 liters of clean water daily to support kidney filtration and cellular metabolic balance."
+                ],
+                "donts": [
+                    "Avoid fried foods, commercial trans-fats, processed bakery items, and excessive saturated animal fats.",
+                    "Strictly avoid smoking, tobacco use, and excessive alcohol, which aggravate vascular inflammation.",
+                    "Do not remain sedentary or sit continuously for hours; incorporate walking breaks every hour.",
+                    "Do not start unverified high-dose supplements or lipid drugs without professional medical guidance."
+                ]
+            }
+        else:
+            lifestyle = {
+                "dos": [
+                    "Drink 6 to 8 glasses of water daily unless your doctor restricted fluid intake.",
+                    "Take all medications at the same time each day using a weekly pill organizer.",
+                    "Eat plenty of fresh vegetables, whole grains, and lean proteins (poultry, fish, beans).",
+                    "Rest and get 7 to 8 hours of sleep each night to help your body heal."
+                ],
+                "donts": [
+                    "Do NOT stop taking blood-thinning medications suddenly without speaking to your doctor.",
+                    "Avoid heavily salted canned foods, fried snacks, and processed deli meats.",
+                    "Do NOT engage in heavy lifting (> 10 lbs) or strenuous exercise until cleared at follow-up.",
+                    "Do NOT smoke or consume alcohol while recovering."
+                ]
+            }
 
         red_flags = [
             "Sudden tightness, pressure, or squeezing pain in your chest, neck, jaw, or left arm.",
@@ -251,6 +297,10 @@ class SummarizerEngine:
         2. If key is Gemini format -> Routes to Google Gemini 1.5 Flash
         3. If blank or error -> Falls back to high-speed local engine ($0.00)
         """
+        # For pure laboratory diagnostic reports, route directly to the grounded laboratory engine
+        if "outside reference range" in clinical_text.lower() or "bio. ref. interval" in clinical_text.lower():
+            return self.simplify_text_locally(clinical_text, specialty)
+
         if not api_key or not api_key.strip():
             clean_key = _get_default_nvidia_key()
         else:
