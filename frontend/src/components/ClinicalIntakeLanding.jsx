@@ -171,7 +171,7 @@ export default function ClinicalIntakeLanding({
               alignItems: 'center',
               gap: '5px'
             }}>
-              <ShieldCheck size={13} /> DeBERTa-v3 Guardrail Active
+              <ShieldCheck size={13} /> Clinical Safety Guardrail Active
             </span>
           </div>
 
@@ -187,7 +187,7 @@ export default function ClinicalIntakeLanding({
               <CheckCircle2 size={16} color="#38bdf8" /> Bio_ClinicalBERT & SHAP Heatmaps
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <CheckCircle2 size={16} color="#34d399" /> NVIDIA NIM Accelerated (Llama 3.2 Vision)
+              <CheckCircle2 size={16} color="#34d399" /> AMA Grade 6 Patient Health Literacy
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <CheckCircle2 size={16} color="#fbbf24" /> 100% Free & Open Architecture ($0.00)

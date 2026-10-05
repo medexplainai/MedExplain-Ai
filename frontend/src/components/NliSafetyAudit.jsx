@@ -77,7 +77,7 @@ export default function NliSafetyAudit({ factChecking, sourceText }) {
           <div className="card-title">
             <ShieldCheck size={19} color="#2563eb" />
             <span style={{ color: '#1e3a8a', fontWeight: 800 }}>
-              Closed-Loop NLI Fact-Checking Guardrail (DeBERTa-v3 Cross-Encoder)
+              Closed-Loop NLI Fact-Checking Safety Guardrail
             </span>
           </div>
           <span className="badge badge-green" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>

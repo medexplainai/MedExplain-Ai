@@ -965,7 +965,7 @@ export default function PatientCarePortal({
                   Timestamp: <strong>{doctorSignOff.timestamp}</strong> • Audit Hash: <code style={{ fontSize: '11px', color: '#047857', background: '#dcfce7', padding: '1px 6px', borderRadius: '4px' }}>{doctorSignOff.hash}</code>
                 </>
               ) : (
-                'Grounded in patient record with NVIDIA NIM Llama 3.2 synthesis & DeBERTa NLI guardrail. Clinician digital countersignature verified.'
+                'Grounded in patient medical record with automated clinical synthesis & closed-loop safety guardrail. Clinician digital countersignature verified.'
               )}
             </div>
           </div>

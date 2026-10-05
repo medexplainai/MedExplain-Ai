@@ -19,6 +19,7 @@ import PatientDashboardView from './components/PatientDashboardView';
 import LongitudinalComparisonModal from './components/LongitudinalComparisonModal';
 import RegisterPatientModal from './components/RegisterPatientModal';
 import UploadFollowupModal from './components/UploadFollowupModal';
+import AboutUsSection from './components/AboutUsSection';
 
 import {
   FileText,
@@ -43,7 +44,8 @@ import {
   TrendingDown,
   UserPlus,
   UploadCloud,
-  CheckCircle2
+  CheckCircle2,
+  GraduationCap
 } from 'lucide-react';
 
 export default function App() {
@@ -63,6 +65,7 @@ export default function App() {
   const [isLongitudinalModalOpen, setIsLongitudinalModalOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isUploadFollowupModalOpen, setIsUploadFollowupModalOpen] = useState(false);
+  const [showAboutUsModal, setShowAboutUsModal] = useState(false);
 
   const [selectedCaseTitle, setSelectedCaseTitle] = useState('');
   const [activeTab, setActiveTab] = useState('tab_diagnostics');
@@ -418,18 +421,18 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: currentText,
-          patient_name: analysisResult?.patient?.name || 'Inpatient',
-          patient_id: analysisResult?.patient?.id || 'PT-2026',
-          age: analysisResult?.patient?.age || 58,
-          gender: analysisResult?.patient?.gender || 'Male',
-          ward: analysisResult?.patient?.ward || 'CCU'
+          patient_name: analysisResult?.patient?.name || activePatient?.name || activePatient?.patient_name || '',
+          patient_id: analysisResult?.patient?.id || activePatient?.id || activePatient?.patient_id || '',
+          age: analysisResult?.patient?.age ?? activePatient?.age ?? null,
+          gender: analysisResult?.patient?.gender || activePatient?.gender || '',
+          ward: analysisResult?.patient?.ward || activePatient?.ward || ''
         })
       });
       const blob = await resp.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Official_Hospital_Discharge_${analysisResult?.patient?.id || 'Record'}.docx`;
+      a.download = `Official_Medical_Record_${analysisResult?.patient?.id || activePatient?.id || 'Document'}.docx`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -478,6 +481,7 @@ export default function App() {
           isAnalyzing={isAnalyzing}
           currentUser={currentUser}
           onLogout={handleLogout}
+          onOpenAboutUs={() => setShowAboutUsModal(true)}
         />
         <main style={{ maxWidth: '1440px', width: '100%', margin: '0 auto', padding: '24px 28px', flex: 1 }}>
           <PatientDashboardView
@@ -621,6 +625,7 @@ export default function App() {
         isAnalyzing={isAnalyzing}
         currentUser={currentUser}
         onLogout={handleLogout}
+        onOpenAboutUs={() => { setViewScreen('workstation'); setActiveTab('tab_about'); }}
       />
 
       {/* Main Container */}
@@ -903,7 +908,7 @@ export default function App() {
                   { id: 'tab_patient', label: '2. Patient Discharge Summary (Doctor Review & Sign-Off)', icon: FileCheck2, color: '#059669' },
                   { id: 'tab_safety', label: '3. NLI Closed-Loop Safety Guardrail', icon: ShieldCheck, color: '#dc2626' },
                   { id: 'tab_intake', label: '4. Source Document & Raw Transcription', icon: FileText, color: '#475569' },
-                  { id: 'tab_arch', label: '5. Architecture & Innovations', icon: Cpu, color: '#7c3aed' }
+                  { id: 'tab_about', label: '5. About Us (Academic Project Team-8)', icon: GraduationCap, color: '#0284c7' }
                 ].map(tab => {
                   const Icon = tab.icon;
                   const isActive = activeTab === tab.id;
@@ -1136,39 +1141,9 @@ export default function App() {
               </div>
             )}
 
-            {/* TAB 5: Architecture & Research Innovations */}
-            {activeTab === 'tab_arch' && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
-                <div className="card">
-                  <div className="card-header">
-                    <div className="card-title">
-                      <Cpu size={17} color="#2563eb" />
-                      <span>Closed-Loop 4-Step Clinical AI Pipeline</span>
-                    </div>
-                  </div>
-                  <div className="card-body" style={{ fontSize: '13px', color: '#334155', lineHeight: '1.6' }}>
-                    <p><strong>Step 1: Clinical Intake & Multi-Modal Parsing:</strong> Ingests EHR discharge narratives, laboratory panels (CBC/Lipid/CMP), and radiology scan impressions.</p>
-                    <p style={{ marginTop: '8px' }}><strong>Step 2: Diagnostic Specialization & SHAP:</strong> Fine-tuned Bio_ClinicalBERT classifies specialty with Shapley token attribution heatmaps eliminating algorithmic opacity.</p>
-                    <p style={{ marginTop: '8px' }}><strong>Step 3: Layman Patient Synthesis:</strong> NVIDIA NIM Llama 3.2 translates dense medical jargon into AMA Grade 6 readability with structured pill timing tables.</p>
-                    <p style={{ marginTop: '8px' }}><strong>Step 4: DeBERTa-v3 Closed-Loop NLI Audit:</strong> Cross-encoder verifies every sentence against the source note. Hallucinated claims are blocked before patient release.</p>
-                  </div>
-                </div>
-
-                <div className="card">
-                  <div className="card-header">
-                    <div className="card-title">
-                      <ShieldCheck size={17} color="#10b981" />
-                      <span>Comparative Advantage over Prior Systems</span>
-                    </div>
-                  </div>
-                  <div className="card-body" style={{ fontSize: '13px', color: '#334155', lineHeight: '1.6' }}>
-                    <p>• <strong>Zero Hallucinations:</strong> Standard medical LLMs hallucinate in 18-35% of clinical summaries (Med-HALT benchmark). MedExplain AI enforces mathematical NLI entailment.</p>
-                    <p style={{ marginTop: '8px' }}>• <strong>100% Free & Fast:</strong> Zero recurring API bills ($0.00). Deterministic local fallback executes in &lt;50ms.</p>
-                    <p style={{ marginTop: '8px' }}>• <strong>Zero Emojis & Enterprise UX:</strong> Hospital-grade design system with clean SVG & Lucide iconography and visual lab range meters.</p>
-                    <p style={{ marginTop: '8px' }}>• <strong>Comprehensive Document Support:</strong> Works across discharge notes, lab reports, CT/MRI radiology scans, and prescriptions.</p>
-                  </div>
-                </div>
-              </div>
+            {/* TAB 5: About Us (Academic Project Team-8) */}
+            {activeTab === 'tab_about' && (
+              <AboutUsSection />
             )}
           </div>
         )}
@@ -1314,6 +1289,59 @@ export default function App() {
         patient={activePatient}
         onFollowupAdded={handleFollowupAdded}
       />
+
+      {/* About Us (Academic Project Team-8) Modal Popup */}
+      {showAboutUsModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.8)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '20px'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '20px',
+            maxWidth: '1000px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.3)',
+            position: 'relative',
+            padding: '28px 32px'
+          }}>
+            <button
+              onClick={() => setShowAboutUsModal(false)}
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                background: '#f1f5f9',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#475569',
+                zIndex: 10
+              }}
+            >
+              <X size={20} />
+            </button>
+            <AboutUsSection />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

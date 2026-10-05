@@ -408,7 +408,7 @@ export default function PatientDashboardView({
               <AlertOctagon size={22} />
             </div>
             <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0' }}>
-              DeBERTa-v3 NLI Safety Guardrail
+              Clinical Safety Guardrail
             </h3>
             <p style={{ fontSize: '12.5px', color: '#64748b', margin: 0, lineHeight: '1.6' }}>
               Closed-loop natural language inference fact-checks every sentence against your uploaded note to eliminate hallucinations.
@@ -509,7 +509,7 @@ export default function PatientDashboardView({
                   fontSize: '11px',
                   fontWeight: 700
                 }}>
-                  Verified by DeBERTa-v3 Guardrail
+                  Verified by Clinical Safety Guardrail
                 </span>
               </div>
               <h1 style={{ fontSize: '26px', fontWeight: 900, margin: 0, letterSpacing: '-0.4px' }}>

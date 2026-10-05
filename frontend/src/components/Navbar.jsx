@@ -9,10 +9,11 @@ import {
   User,
   LogOut,
   Sparkles,
-  HeartHandshake
+  HeartHandshake,
+  GraduationCap
 } from 'lucide-react';
 
-export default function Navbar({ latencyMs, documentType, isAnalyzing, currentUser, onLogout }) {
+export default function Navbar({ latencyMs, documentType, isAnalyzing, currentUser, onLogout, onOpenAboutUs }) {
   const isDoctor = currentUser?.role === 'doctor';
   const isPatient = currentUser?.role === 'patient';
 
@@ -99,40 +100,29 @@ export default function Navbar({ latencyMs, documentType, isAnalyzing, currentUs
           </div>
         )}
 
-        {/* Engine Status */}
-        <div style={{
-          background: 'rgba(16, 185, 129, 0.15)',
-          border: '1px solid rgba(16, 185, 129, 0.35)',
-          borderRadius: '8px',
-          padding: '5px 12px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '7px',
-          fontSize: '12px',
-          color: '#6ee7b7',
-          fontWeight: 600
-        }}>
-          <span className="pulse-dot" style={{ width: '7px', height: '7px' }}></span>
-          <Cpu size={14} />
-          <span>NVIDIA NIM Accelerated (Llama 3.2)</span>
-        </div>
-
-        {/* NLI Guardrail Status */}
-        <div style={{
-          background: 'rgba(99, 102, 241, 0.15)',
-          border: '1px solid rgba(99, 102, 241, 0.35)',
-          borderRadius: '8px',
-          padding: '5px 12px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          fontSize: '12px',
-          color: '#c7d2fe',
-          fontWeight: 600
-        }}>
-          <ShieldCheck size={14} />
-          <span>DeBERTa NLI Active</span>
-        </div>
+        {/* About Us (Academic Project Team-8) Button */}
+        {onOpenAboutUs && (
+          <button
+            onClick={onOpenAboutUs}
+            style={{
+              background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.25) 0%, rgba(2, 132, 199, 0.25) 100%)',
+              border: '1px solid rgba(56, 189, 248, 0.45)',
+              borderRadius: '8px',
+              padding: '6px 14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '7px',
+              fontSize: '12px',
+              color: '#7dd3fc',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <GraduationCap size={15} color="#38bdf8" />
+            <span>About Us (Team-8)</span>
+          </button>
+        )}
 
         {/* Latency Meter */}
         <div style={{

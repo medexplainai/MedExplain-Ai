@@ -18,14 +18,14 @@ const PIPELINE_STAGES = [
   },
   {
     id: 3,
-    title: 'NVIDIA NIM Llama-3.2-11b Vision Health Literacy Engine',
+    title: 'Clinical Health Literacy & Synthesizer Engine',
     subtitle: 'Synthesizing patient care guide at AMA Grade 6.2 reading level',
     icon: Cpu,
     tag: 'Stage 3'
   },
   {
     id: 4,
-    title: 'DeBERTa-v3 Closed-Loop NLI Hallucination Verification',
+    title: 'Closed-Loop NLI Hallucination Verification Guardrail',
     subtitle: 'Cross-validating claims against source EHR to ensure zero factual drift',
     icon: ShieldCheck,
     tag: 'Stage 4'
@@ -293,7 +293,7 @@ export default function ClinicalPipelineLoader({ isAnalyzing, onComplete }) {
         }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
             <Sparkles size={13} color="#2563eb" />
-            <span>NVIDIA NIM & DeBERTa-v3 Cross-Encoder</span>
+            <span>Clinical AI Decision Support & Safety Pipeline</span>
           </span>
           <span style={{ fontWeight: 700, color: progressPercent === 100 ? '#16a34a' : '#2563eb' }}>
             {progressPercent === 100 ? 'Verification Complete!' : `${displayCount} / 4 stages complete`}
