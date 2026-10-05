@@ -120,7 +120,7 @@ export default function Navbar({ latencyMs, documentType, isAnalyzing, currentUs
             }}
           >
             <GraduationCap size={15} color="#38bdf8" />
-            <span>About Us (Team-8)</span>
+            <span>About</span>
           </button>
         )}
 

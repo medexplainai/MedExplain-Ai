@@ -499,7 +499,7 @@ export default function App() {
             }}
             isAnalyzing={isAnalyzing}
           />
-          <CollegeTeamFooter />
+          <CollegeTeamFooter onOpenAbout={() => setShowAboutUsModal(true)} />
         </main>
         <ClinicalPipelineLoader isAnalyzing={isAnalyzing} onComplete={() => {}} />
 
@@ -625,7 +625,7 @@ export default function App() {
         isAnalyzing={isAnalyzing}
         currentUser={currentUser}
         onLogout={handleLogout}
-        onOpenAboutUs={() => { setViewScreen('workstation'); setActiveTab('tab_about'); }}
+        onOpenAboutUs={() => setShowAboutUsModal(true)}
       />
 
       {/* Main Container */}
@@ -908,7 +908,7 @@ export default function App() {
                   { id: 'tab_patient', label: '2. Patient Discharge Summary (Doctor Review & Sign-Off)', icon: FileCheck2, color: '#059669' },
                   { id: 'tab_safety', label: '3. NLI Closed-Loop Safety Guardrail', icon: ShieldCheck, color: '#dc2626' },
                   { id: 'tab_intake', label: '4. Source Document & Raw Transcription', icon: FileText, color: '#475569' },
-                  { id: 'tab_about', label: '5. About Us (Academic Project Team-8)', icon: GraduationCap, color: '#0284c7' }
+                  { id: 'tab_about', label: '5. About (Team-8)', icon: GraduationCap, color: '#0284c7' }
                 ].map(tab => {
                   const Icon = tab.icon;
                   const isActive = activeTab === tab.id;
@@ -1148,8 +1148,8 @@ export default function App() {
           </div>
         )}
 
-        {/* Academic Team Footer */}
-        <CollegeTeamFooter />
+        {/* Clinical System Footer */}
+        <CollegeTeamFooter onOpenAbout={() => setShowAboutUsModal(true)} />
       </main>
 
       {/* Interactive Step-by-Step Clinical Processing Pipeline Loader */}
