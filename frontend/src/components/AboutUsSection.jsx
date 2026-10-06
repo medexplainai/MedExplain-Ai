@@ -79,7 +79,7 @@ export default function AboutUsSection() {
           </h1>
           <p style={{ fontSize: '16px', opacity: 0.95, margin: 0, fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <Building2 size={18} />
-            <span>JNTU College of Engineering</span>
+            <span>Aditya Institute of Technology and Management</span>
             <span>•</span>
             <span style={{ color: '#bae6fd', fontWeight: 600 }}>Final Year Major Project</span>
           </p>

@@ -24,7 +24,7 @@ export default function CollegeTeamFooter({ onOpenAbout }) {
           MetroHealth Clinical AI Decision Support System
         </span>
         <span style={{ color: '#cbd5e1' }}>•</span>
-        <span>JNTU College of Engineering</span>
+        <span>Aditya Institute of Technology and Management</span>
       </div>
 
       <div>

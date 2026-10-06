@@ -10,7 +10,6 @@ import RadiologyVisualizer from './components/RadiologyVisualizer';
 import ExplainabilityHeatmap from './components/ExplainabilityHeatmap';
 import PatientCarePortal from './components/PatientCarePortal';
 import NliSafetyAudit from './components/NliSafetyAudit';
-import CollegeTeamFooter from './components/CollegeTeamFooter';
 import ClinicalPipelineLoader from './components/ClinicalPipelineLoader';
 import ClinicalIntakeLanding from './components/ClinicalIntakeLanding';
 import AuthScreen from './components/AuthScreen';
@@ -701,7 +700,6 @@ export default function App() {
             activeReportType={activeReportType}
             onSwitchReportType={handleSwitchReportType}
           />
-          <CollegeTeamFooter onOpenAbout={() => setShowAboutUsModal(true)} />
         </main>
         <ClinicalPipelineLoader isAnalyzing={isAnalyzing} onComplete={() => {}} />
 
@@ -1496,9 +1494,6 @@ export default function App() {
             )}
           </div>
         )}
-
-        {/* Clinical System Footer */}
-        <CollegeTeamFooter onOpenAbout={() => setShowAboutUsModal(true)} />
       </main>
 
       {/* Interactive Step-by-Step Clinical Processing Pipeline Loader */}
