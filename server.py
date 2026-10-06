@@ -32,6 +32,8 @@ from models.longitudinal_engine import longitudinal_engine
 from models.auth_engine import auth_engine
 from data.sample_notes import SAMPLE_CLINICAL_NOTES
 from utils.discharge_pdf import generate_hospital_discharge_docx
+from utils.medical_pdf_generator import generate_medical_report_pdf
+from models.qa_assistant_engine import qa_assistant_engine
 
 app = FastAPI(
     title="MedExplain AI Backend",
@@ -93,6 +95,15 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
+class ChatReportRequest(BaseModel):
+    query: str
+    text: str
+    patient_name: Optional[str] = None
+    patient_id: Optional[str] = None
+    age: Optional[Union[int, str]] = None
+    gender: Optional[str] = None
+    ward: Optional[str] = None
+
 @app.post("/api/auth/register")
 def register_user_endpoint(req: RegisterRequest):
     try:
@@ -123,7 +134,7 @@ def get_users_endpoint():
     return {"users": auth_engine.get_all_users()}
 
 def extract_text_from_file_bytes(contents: bytes, filename: str) -> str:
-    """Helper to extract clean text from PDF, DOCX, or text files."""
+    """Helper to extract clean text from PDF, DOCX, text files, and OCR image documents."""
     filename_lower = filename.lower()
     if filename_lower.endswith(".pdf"):
         pdf_stream = io.BytesIO(contents)
@@ -133,6 +144,28 @@ def extract_text_from_file_bytes(contents: bytes, filename: str) -> str:
         docx_stream = io.BytesIO(contents)
         doc = docx.Document(docx_stream)
         return "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
+    elif filename_lower.endswith((".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff")):
+        try:
+            from PIL import Image
+            import shutil
+            if shutil.which("tesseract"):
+                import pytesseract
+                img = Image.open(io.BytesIO(contents))
+                return pytesseract.image_to_string(img)
+            else:
+                raise HTTPException(
+                    status_code=422,
+                    detail={
+                        "error": "OCR_BINARY_MISSING",
+                        "title": "Optical Character Recognition (OCR) Notice",
+                        "reason": "Scanned image document detected. To ensure 100% extraction accuracy and prevent character hallucination, please upload the official digital PDF, DOCX, or text medical record. (Tesseract OCR binary is not installed in the host PATH).",
+                        "filename": filename
+                    }
+                )
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Image parsing error: {str(e)}")
     else:
         return contents.decode("utf-8", errors="ignore")
 
@@ -321,6 +354,7 @@ def analyze_medical_document(req: AnalyzeRequest):
     ward = raw_ward
 
     return {
+        "text": clinical_text,
         "document_type": doc_type,
         "classification": classification,
         "entities": entities,
@@ -342,21 +376,11 @@ def analyze_medical_document(req: AnalyzeRequest):
 
 @app.post("/api/upload")
 async def upload_document(file: UploadFile = File(...)):
-    filename = file.filename.lower()
     contents = await file.read()
-    extracted_text = ""
-
     try:
-        if filename.endswith(".pdf"):
-            pdf_stream = io.BytesIO(contents)
-            reader = PdfReader(pdf_stream)
-            extracted_text = "\n".join([page.extract_text() or "" for page in reader.pages])
-        elif filename.endswith(".docx"):
-            docx_stream = io.BytesIO(contents)
-            doc = docx.Document(docx_stream)
-            extracted_text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
-        else:
-            extracted_text = contents.decode("utf-8", errors="ignore")
+        extracted_text = extract_text_from_file_bytes(contents, file.filename)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to parse document: {str(e)}")
 
@@ -407,6 +431,42 @@ async def upload_document(file: UploadFile = File(...)):
 def test_hallucination(claim: str = Form(...), context: str = Form(...)):
     report = fact_checker_engine.evaluate_summary_faithfulness(claim, context)
     return report
+
+@app.post("/api/chat-report")
+def chat_clinical_report(req: ChatReportRequest):
+    if not req.query.strip():
+        raise HTTPException(status_code=400, detail="Query cannot be empty.")
+    if not req.text.strip():
+        raise HTTPException(status_code=400, detail="Medical document text is required to ground answers.")
+
+    classification = clinical_engine.classify_specialty(req.text)
+    entities = clinical_engine.extract_entities(req.text)
+    top_spec = classification["top_specialty"]
+    summary_data = summarizer_engine.simplify_text_locally(req.text, top_spec)
+    if not summary_data.get("medication_table") and entities.get("medications"):
+        summary_data["medication_table"] = summarizer_engine.build_medication_table_from_entities(entities["medications"])
+
+    doc_type = document_parser_engine.detect_document_type(req.text)
+    labs_parsed = document_parser_engine.parse_laboratory_report(req.text) if doc_type == "Laboratory Test Report" else []
+
+    meta = document_parser_engine.extract_patient_metadata(req.text)
+    patient_info = {
+        "name": req.patient_name or meta.get("name") or "Inpatient Case",
+        "id": req.patient_id or meta.get("id") or "PT-2026",
+        "age": req.age or meta.get("age") or 55,
+        "gender": req.gender or meta.get("gender") or "M/F",
+        "ward": req.ward or meta.get("ward") or "Acute Medical Ward"
+    }
+
+    ans_result = qa_assistant_engine.answer_clinical_query(
+        query=req.query,
+        doc_text=req.text,
+        patient_info=patient_info,
+        entities=entities,
+        lab_results=labs_parsed,
+        summary_data=summary_data
+    )
+    return ans_result
 
 @app.post("/api/download-docx")
 def download_discharge_docx(req: AnalyzeRequest):
@@ -467,6 +527,66 @@ def download_discharge_docx(req: AnalyzeRequest):
         io.BytesIO(docx_bytes),
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={"Content-Disposition": f"attachment; filename=Official_Record_{cand_id}.docx"}
+    )
+
+@app.post("/api/download-pdf")
+def download_discharge_pdf(req: AnalyzeRequest):
+    classification = clinical_engine.classify_specialty(req.text)
+    entities = clinical_engine.extract_entities(req.text)
+    top_spec = classification["top_specialty"]
+    summary_data = summarizer_engine.simplify_text_locally(req.text, top_spec)
+
+    # Harmonize medication table with entities so it is never missing if meds exist
+    if not summary_data.get("medication_table") and entities.get("medications"):
+        summary_data["medication_table"] = summarizer_engine.build_medication_table_from_entities(entities["medications"])
+
+    doc_type = document_parser_engine.detect_document_type(req.text)
+    labs_parsed = document_parser_engine.parse_laboratory_report(req.text)
+
+    # Extract metadata strictly from document text if not supplied or if fallback/generic
+    meta = document_parser_engine.extract_patient_metadata(req.text)
+
+    cand_name = req.patient_name
+    if not cand_name or cand_name.strip() in ["Inpatient", "Clinical Inpatient", "John Doe", "Report Availability Summary", "Tests Outside Reference Range"]:
+        cand_name = meta.get("name") or "Diagnostic Inpatient"
+
+    cand_id = req.patient_id
+    if not cand_id or cand_id.strip() in ["PT-2026", "PT-8941", "PT-0000", "Record"]:
+        cand_id = meta.get("id") or "PT-2026"
+
+    cand_age = req.age
+    if cand_age is None or cand_age in [1, 58]:
+        cand_age = meta.get("age") or 58
+
+    cand_gender = req.gender
+    if not cand_gender or cand_gender in ["M/F"]:
+        cand_gender = meta.get("gender") or "Male"
+
+    cand_ward = req.ward
+    if not cand_ward or cand_ward in ["CCU"]:
+        cand_ward = meta.get("ward") or ("Pathology & Diagnostic Medicine" if doc_type == "Laboratory Test Report" else "Acute Inpatient Care")
+
+    patient_dict = {
+        "name": cand_name,
+        "id": cand_id,
+        "age": cand_age,
+        "gender": cand_gender,
+        "room": cand_ward,
+        "triage": "Diagnostic Pathology" if doc_type == "Laboratory Test Report" else "Acute Priority",
+        "ward": cand_ward
+    }
+
+    pdf_bytes = generate_medical_report_pdf(
+        patient_dict,
+        summary_data,
+        entities,
+        doc_type=doc_type,
+        lab_results=labs_parsed
+    )
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=Official_Record_{cand_id}.pdf"}
     )
 
 @app.post("/api/patients")

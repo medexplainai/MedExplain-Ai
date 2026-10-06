@@ -20,6 +20,7 @@ import LongitudinalComparisonModal from './components/LongitudinalComparisonModa
 import RegisterPatientModal from './components/RegisterPatientModal';
 import UploadFollowupModal from './components/UploadFollowupModal';
 import AboutUsSection from './components/AboutUsSection';
+import ReportQADrawer from './components/ReportQADrawer';
 
 import {
   FileText,
@@ -45,7 +46,9 @@ import {
   UserPlus,
   UploadCloud,
   CheckCircle2,
-  GraduationCap
+  GraduationCap,
+  FileDown,
+  MessageSquareText
 } from 'lucide-react';
 
 export default function App() {
@@ -66,6 +69,7 @@ export default function App() {
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isUploadFollowupModalOpen, setIsUploadFollowupModalOpen] = useState(false);
   const [showAboutUsModal, setShowAboutUsModal] = useState(false);
+  const [isQADrawerOpen, setIsQADrawerOpen] = useState(false);
 
   const [selectedCaseTitle, setSelectedCaseTitle] = useState('');
   const [activeTab, setActiveTab] = useState('tab_diagnostics');
@@ -441,6 +445,33 @@ export default function App() {
     }
   };
 
+  const handleDownloadPdf = async () => {
+    try {
+      const resp = await fetch('/api/download-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: currentText,
+          patient_name: analysisResult?.patient?.name || activePatient?.name || activePatient?.patient_name || '',
+          patient_id: analysisResult?.patient?.id || activePatient?.id || activePatient?.patient_id || '',
+          age: analysisResult?.patient?.age ?? activePatient?.age ?? null,
+          gender: analysisResult?.patient?.gender || activePatient?.gender || '',
+          ward: analysisResult?.patient?.ward || activePatient?.ward || ''
+        })
+      });
+      const blob = await resp.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Official_Medical_Record_${analysisResult?.patient?.id || activePatient?.id || 'Document'}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err) {
+      console.error('Download PDF error:', err);
+    }
+  };
+
   const handleDoctorSignOff = () => {
     const now = new Date();
     const dateStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -489,6 +520,7 @@ export default function App() {
             analysisResult={analysisResult}
             selectedCaseTitle={selectedCaseTitle}
             onDownloadDocx={handleDownloadDocx}
+            onDownloadPdf={handleDownloadPdf}
             onLogout={handleLogout}
             onUploadFile={handleUploadFile}
             onAnalyzeCustomText={handleAnalyzeCustom}
@@ -1066,6 +1098,25 @@ export default function App() {
                     </button>
 
                     <button
+                      onClick={handleDownloadPdf}
+                      className="btn btn-secondary"
+                      style={{
+                        padding: '10px 16px',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        borderRadius: '9px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        color: '#047857',
+                        borderColor: '#a7f3d0'
+                      }}
+                    >
+                      <FileDown size={15} color="#047857" />
+                      <span>Download Official PDF</span>
+                    </button>
+
+                    <button
                       onClick={handleDoctorSignOff}
                       className="btn btn-primary"
                       style={{
@@ -1094,6 +1145,7 @@ export default function App() {
                   entities={analysisResult.entities}
                   patient={analysisResult.patient}
                   onDownloadDocx={handleDownloadDocx}
+                  onDownloadPdf={handleDownloadPdf}
                   doctorSignOff={doctorSignOff}
                 />
               </div>
@@ -1342,6 +1394,54 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Floating Ask MedExplain AI Q&A Button */}
+      {analysisResult && (
+        <div className="no-print" style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9990 }}>
+          {!isQADrawerOpen && (
+            <button
+              onClick={() => setIsQADrawerOpen(true)}
+              style={{
+                background: 'linear-gradient(135deg, #0f766e 0%, #0d9488 100%)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '999px',
+                padding: '12px 20px',
+                fontSize: '13.5px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 8px 24px rgba(13, 148, 136, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.2)',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <Sparkles size={17} />
+              <span>Ask MedExplain AI</span>
+              <span style={{
+                background: 'rgba(255, 255, 255, 0.25)',
+                fontSize: '10px',
+                padding: '2px 7px',
+                borderRadius: '999px',
+                fontWeight: 800
+              }}>
+                100% Grounded
+              </span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Grounded Clinical Q&A Slide-out Drawer */}
+      <ReportQADrawer
+        isOpen={isQADrawerOpen}
+        onClose={() => setIsQADrawerOpen(false)}
+        reportText={currentText}
+        patientData={analysisResult?.patient || activePatient}
+        summaryData={analysisResult?.summary}
+        labResults={analysisResult?.lab_results || []}
+      />
     </div>
   );
 }

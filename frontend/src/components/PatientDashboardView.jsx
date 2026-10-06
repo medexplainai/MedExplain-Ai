@@ -20,7 +20,8 @@ import {
   ArrowRight,
   RefreshCw,
   FileUp,
-  Award
+  Award,
+  FileDown
 } from 'lucide-react';
 import PatientCarePortal from './PatientCarePortal';
 import LabReportVisualizer from './LabReportVisualizer';
@@ -31,6 +32,7 @@ export default function PatientDashboardView({
   analysisResult,
   selectedCaseTitle,
   onDownloadDocx,
+  onDownloadPdf,
   onLogout,
   onUploadFile,
   onAnalyzeCustomText,
@@ -567,6 +569,30 @@ export default function PatientDashboardView({
               <span>Print Discharge Sheet</span>
             </button>
 
+            {onDownloadPdf && (
+              <button
+                onClick={onDownloadPdf}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: '#047857',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  padding: '10px 18px',
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(4, 120, 87, 0.25)',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <FileDown size={16} />
+                <span>Download Official PDF</span>
+              </button>
+            )}
+
             <button
               onClick={onDownloadDocx}
               style={{
@@ -760,6 +786,7 @@ export default function PatientDashboardView({
         entities={analysisResult?.entities}
         patient={patient}
         onDownloadDocx={onDownloadDocx}
+        onDownloadPdf={onDownloadPdf}
         doctorSignOff={{
           isSigned: true,
           doctorName: 'Dr. Sarah Jenkins, MD',

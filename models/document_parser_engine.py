@@ -37,14 +37,31 @@ LAB_REFERENCE_RANGES = {
     "triglycerides": {"min": 50, "max": 150, "unit": "mg/dL", "name": "Serum Triglycerides", "system": "Cardiovascular"},
     "hs-crp": {"min": 0.0, "max": 3.0, "unit": "mg/L", "name": "High Sensitivity C-Reactive Protein (hs-CRP)", "system": "Cardiovascular & Inflammatory"},
     "lipoprotein (a)": {"min": 0.0, "max": 30.0, "unit": "mg/dL", "name": "Lipoprotein (a) [Lp(a)]", "system": "Cardiovascular"},
+    "non-hdl cholesterol": {"min": 0.0, "max": 130.0, "unit": "mg/dL", "name": "Non-HDL Cholesterol", "system": "Cardiovascular"},
+    "vldl": {"min": 5.0, "max": 30.0, "unit": "mg/dL", "name": "VLDL Cholesterol", "system": "Cardiovascular"},
+    "tc/ hdl cholesterol ratio": {"min": 3.0, "max": 5.0, "unit": "Ratio", "name": "TC/ HDL Cholesterol Ratio", "system": "Cardiovascular"},
+    "ldl / hdl ratio": {"min": 1.5, "max": 3.5, "unit": "Ratio", "name": "LDL / HDL Ratio", "system": "Cardiovascular"},
+    "trig / hdl ratio": {"min": 1.0, "max": 3.0, "unit": "Ratio", "name": "Trig / HDL Ratio", "system": "Cardiovascular"},
     "vitamin d": {"min": 30.0, "max": 100.0, "unit": "ng/mL", "name": "25-OH Vitamin D (Total)", "system": "Endocrine & Bone Health"},
     "vitamin b-12": {"min": 197.0, "max": 771.0, "unit": "pg/mL", "name": "Vitamin B-12", "system": "Hematology & Neurological"},
     "troponin i": {"min": 0.0, "max": 0.04, "unit": "ng/mL", "name": "Cardiac Troponin I", "system": "Cardiovascular"},
     "alt": {"min": 7, "max": 45, "unit": "U/L", "name": "Alanine Aminotransferase (ALT/SGPT)", "system": "Hepatic"},
     "ast": {"min": 10, "max": 35, "unit": "U/L", "name": "Aspartate Aminotransferase (AST/SGOT)", "system": "Hepatic"},
     "bilirubin": {"min": 0.3, "max": 1.2, "unit": "mg/dL", "name": "Total Bilirubin", "system": "Hepatic"},
+    "alkaline phosphatase": {"min": 44.0, "max": 147.0, "unit": "U/L", "name": "Alkaline Phosphatase (ALP)", "system": "Hepatic & Bone"},
+    "total protein": {"min": 6.0, "max": 8.3, "unit": "g/dL", "name": "Total Protein", "system": "Hepatic & Protein"},
+    "albumin": {"min": 3.5, "max": 5.2, "unit": "g/dL", "name": "Serum Albumin", "system": "Hepatic & Renal"},
+    "globulin": {"min": 2.5, "max": 3.4, "unit": "g/dL", "name": "Serum Globulin", "system": "Hepatic & Immune"},
     "iron": {"min": 50, "max": 175, "unit": "ug/dL", "name": "Serum Iron", "system": "Hematology"},
-    "globulin": {"min": 2.5, "max": 3.4, "unit": "g/dL", "name": "Serum Globulin", "system": "Hepatic & Immune"}
+    "tsh": {"min": 0.35, "max": 4.94, "unit": "uIU/mL", "name": "TSH - Ultrasensitive", "system": "Endocrine"},
+    "total t3": {"min": 0.8, "max": 2.0, "unit": "ng/mL", "name": "Total Triiodothyronine (T3)", "system": "Endocrine"},
+    "total t4": {"min": 5.1, "max": 14.1, "unit": "ug/dL", "name": "Total Thyroxine (T4)", "system": "Endocrine"},
+    "free t3": {"min": 2.3, "max": 4.2, "unit": "pg/mL", "name": "Free Triiodothyronine (FT3)", "system": "Endocrine"},
+    "free t4": {"min": 0.8, "max": 1.8, "unit": "ng/dL", "name": "Free Thyroxine (FT4)", "system": "Endocrine"},
+    "uric acid": {"min": 3.5, "max": 7.2, "unit": "mg/dL", "name": "Serum Uric Acid", "system": "Renal & Metabolic"},
+    "ferritin": {"min": 20.0, "max": 250.0, "unit": "ng/mL", "name": "Serum Ferritin", "system": "Hematology"},
+    "transferrin saturation": {"min": 20.0, "max": 50.0, "unit": "%", "name": "% Transferrin Saturation", "system": "Hematology"},
+    "d-dimer": {"min": 0.0, "max": 0.5, "unit": "ug/mL", "name": "D-Dimer", "system": "Cardiovascular & Coagulation"}
 }
 
 class DocumentParserEngine:

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   HeartHandshake,
   Pill,
@@ -22,7 +22,10 @@ import {
   FileText,
   Filter,
   Check,
-  X
+  X,
+  Edit3,
+  Save,
+  FileDown
 } from 'lucide-react';
 
 const JARGON_DICTIONARY = [
@@ -75,6 +78,7 @@ const TRANSLATIONS = {
     jargonSubtitle: 'Complex hospital terms translated into plain, everyday language',
     searchPlaceholder: 'Search medical term (e.g. Stent, Dyspnea, Troponin, Infarction)...',
     printDischarge: 'Print Bedside Discharge Sheet',
+    downloadPdf: 'Download Official PDF',
     downloadDocx: 'Download Discharge Summary (.docx)',
     doctorSignature: 'Doctor-in-the-Loop Governance & Digital Attestation',
     signedStatus: 'Digitally Countersigned & Cleared for Release',
@@ -102,6 +106,7 @@ const TRANSLATIONS = {
     jargonSubtitle: 'Términos hospitalarios complejos explicados en lenguaje común y comprensible',
     searchPlaceholder: 'Buscar término médico (ej. Stent, Disnea, Troponina, Infarto)...',
     printDischarge: 'Imprimir Hoja de Alta',
+    downloadPdf: 'Descargar PDF Oficial',
     downloadDocx: 'Descargar Resumen de Alta (.docx)',
     doctorSignature: 'Gobernanza con Médico en el Bucle y Certificación Digital',
     signedStatus: 'Firmado Digitalmente y Aprobado para Entrega',
@@ -129,6 +134,7 @@ const TRANSLATIONS = {
     jargonSubtitle: 'अस्पताल के कठिन मेडिकल शब्दों का आम बोलचाल में सरल अनुवाद',
     searchPlaceholder: 'मेडिकल शब्द खोजें (उदा. स्टेंट, सांस फूलना, ट्रोपोनिन, दिल का दौरा)...',
     printDischarge: 'डिस्चार्ज सारांश प्रिंट करें',
+    downloadPdf: 'आधिकारिक PDF डाउनलोड करें',
     downloadDocx: 'डिस्चार्ज दस्तावेज (.docx) डाउनलोड करें',
     doctorSignature: 'चिकित्सक समीक्षा एवं डिजिटल सत्यापन प्रमाणपत्र',
     signedStatus: 'डिजिटल रूप से प्रमाणित एवं स्वीकृत',
@@ -310,6 +316,7 @@ export default function PatientCarePortal({
   entities,
   patient,
   onDownloadDocx,
+  onDownloadPdf,
   doctorSignOff
 }) {
   if (!summary) return null;
@@ -317,9 +324,17 @@ export default function PatientCarePortal({
   const [selectedLang, setSelectedLang] = useState('en');
   const [jargonQuery, setJargonQuery] = useState('');
   const [jargonCategory, setJargonCategory] = useState('All');
+  const [isEditingNote, setIsEditingNote] = useState(false);
+  const [editedOverview, setEditedOverview] = useState(summary.overview || '');
+  const [isCustomAmended, setIsCustomAmended] = useState(false);
+
+  useEffect(() => {
+    setEditedOverview(summary.overview || '');
+    setIsCustomAmended(false);
+  }, [summary.overview]);
 
   const t = TRANSLATIONS[selectedLang] || TRANSLATIONS.en;
-  const overview = summary.overview || '';
+  const overview = editedOverview || summary.overview || '';
 
   // Medication Harmonization: Sync summary.medication_table with entities.medications
   const baseMeds = [...(summary.medication_table || [])];
@@ -473,10 +488,30 @@ export default function PatientCarePortal({
             <span>{t.printDischarge}</span>
           </button>
 
+          {onDownloadPdf && (
+            <button
+              onClick={onDownloadPdf}
+              className="btn btn-primary"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '12.5px',
+                padding: '7px 14px',
+                fontWeight: 700,
+                background: '#047857',
+                borderColor: '#047857'
+              }}
+            >
+              <FileDown size={15} />
+              <span>{t.downloadPdf}</span>
+            </button>
+          )}
+
           {onDownloadDocx && (
             <button
               onClick={onDownloadDocx}
-              className="btn btn-primary"
+              className="btn btn-secondary"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -499,19 +534,104 @@ export default function PatientCarePortal({
         background: 'linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)',
         boxShadow: '0 4px 14px rgba(16, 185, 129, 0.08)'
       }}>
-        <div className="card-header" style={{ background: '#ecfdf5', borderBottom: '1px solid #d1fae5' }}>
+        <div className="card-header" style={{ background: '#ecfdf5', borderBottom: '1px solid #d1fae5', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div className="card-title">
             <HeartHandshake size={19} color="#059669" />
             <span style={{ color: '#065f46' }}>{t.laymanTitle}</span>
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {isCustomAmended && (
+              <span className="badge badge-blue" style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Check size={12} /> Doctor Amended
+              </span>
+            )}
             <span className="badge badge-green" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
               <Award size={13} /> {t.benchmarkBadge}
             </span>
+            <button
+              onClick={() => setIsEditingNote(!isEditingNote)}
+              className="no-print"
+              style={{
+                background: isEditingNote ? '#047857' : '#ffffff',
+                color: isEditingNote ? '#ffffff' : '#065f46',
+                border: '1px solid #a7f3d0',
+                borderRadius: '6px',
+                padding: '4px 10px',
+                fontSize: '11.5px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              {isEditingNote ? <Check size={13} /> : <Edit3 size={13} />}
+              <span>{isEditingNote ? 'Done Editing' : 'Edit Care Plan'}</span>
+            </button>
           </div>
         </div>
         <div className="card-body">
-          {renderCleanOverview(overview, selectedLang)}
+          {isEditingNote ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ fontSize: '12px', color: '#047857', fontWeight: 600 }}>
+                Doctor Note Editor: You can directly amend the plain-language clinical synthesis or add specific home recovery instructions below.
+              </div>
+              <textarea
+                value={editedOverview}
+                onChange={(e) => {
+                  setEditedOverview(e.target.value);
+                  setIsCustomAmended(true);
+                }}
+                rows={8}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: '1.5px solid #a7f3d0',
+                  fontSize: '13px',
+                  lineHeight: '1.6',
+                  fontFamily: 'inherit',
+                  boxSizing: 'border-box'
+                }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                <button
+                  onClick={() => {
+                    setEditedOverview(summary.overview || '');
+                    setIsCustomAmended(false);
+                    setIsEditingNote(false);
+                  }}
+                  style={{
+                    background: '#f1f5f9',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '6px',
+                    padding: '6px 12px',
+                    fontSize: '12px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Reset to Original
+                </button>
+                <button
+                  onClick={() => setIsEditingNote(false)}
+                  style={{
+                    background: '#047857',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '6px 14px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Apply Changes
+                </button>
+              </div>
+            </div>
+          ) : (
+            renderCleanOverview(overview, selectedLang)
+          )}
         </div>
       </div>
 
