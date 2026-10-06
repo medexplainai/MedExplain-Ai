@@ -101,8 +101,8 @@ export default function UploadFollowupModal({
       }
 
       setIsSubmitting(false);
-      if (onFollowupAdded && data.patient) {
-        onFollowupAdded(data.patient);
+      if (onFollowupAdded) {
+        onFollowupAdded(data.patient || data.track, data.analysis);
       }
       onClose();
     } catch (err) {

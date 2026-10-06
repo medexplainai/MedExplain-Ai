@@ -104,6 +104,16 @@ class ChatReportRequest(BaseModel):
     gender: Optional[str] = None
     ward: Optional[str] = None
 
+class CreateTrackRequest(BaseModel):
+    user_email: str
+    track_name: Optional[str] = None
+    relationship: Optional[str] = "Family Member"
+    name: Optional[str] = None
+    age: Optional[Union[int, str]] = None
+    gender: Optional[str] = None
+    specialty: Optional[str] = None
+    text: str
+
 @app.post("/api/auth/register")
 def register_user_endpoint(req: RegisterRequest):
     try:
@@ -756,10 +766,21 @@ def add_patient_followup(patient_id: str, req: FollowupRequest):
     if not updated:
         raise HTTPException(status_code=404, detail=f"Patient with ID {patient_id} not found in registry.")
 
+    analysis = analyze_medical_document(AnalyzeRequest(
+        text=req.text,
+        patient_name=updated.get("name"),
+        patient_id=updated.get("id"),
+        age=updated.get("age"),
+        gender=updated.get("gender"),
+        ward=updated.get("ward")
+    ))
+
     return {
         "message": f"Follow-up report successfully attached to patient {patient_id}.",
         "patient": updated,
-        "trajectory": updated.get("longitudinal_trajectory")
+        "track": updated,
+        "trajectory": updated.get("longitudinal_trajectory"),
+        "analysis": analysis
     }
 
 @app.post("/api/patients/{patient_id}/followup/upload")
@@ -808,10 +829,21 @@ async def upload_patient_followup(
     if not updated:
         raise HTTPException(status_code=404, detail=f"Patient with ID {patient_id} not found in registry.")
 
+    analysis = analyze_medical_document(AnalyzeRequest(
+        text=extracted_text,
+        patient_name=updated.get("name"),
+        patient_id=updated.get("id"),
+        age=updated.get("age"),
+        gender=updated.get("gender"),
+        ward=updated.get("ward")
+    ))
+
     return {
         "message": f"Follow-up report uploaded and attached to {patient_id}.",
         "patient": updated,
-        "trajectory": updated.get("longitudinal_trajectory")
+        "track": updated,
+        "trajectory": updated.get("longitudinal_trajectory"),
+        "analysis": analysis
     }
 
 @app.post("/api/compare-reports")
@@ -840,6 +872,231 @@ def compare_arbitrary_reports(req: CompareRequest):
         latest_text=req.latest_text
     )
     return trajectory
+
+# -------------------------------------------------------------
+# Multi-Track & Family Health Dossier Endpoints
+# -------------------------------------------------------------
+
+@app.get("/api/user/tracks")
+def get_user_tracks(email: Optional[str] = None):
+    """
+    Returns all personal and family health tracks associated with the logged-in user.
+    """
+    if not email:
+        return {"tracks": []}
+    tracks = patient_registry_engine.get_tracks_by_user_email(email)
+    return {"tracks": tracks}
+
+@app.post("/api/user/tracks/create")
+def create_track_text(req: CreateTrackRequest):
+    if not req.text.strip():
+        raise HTTPException(status_code=400, detail="Empty clinical document text.")
+
+    is_valid, reason = document_parser_engine.is_valid_medical_document(req.text)
+    if not is_valid:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "NON_MEDICAL_DOCUMENT_EXCEPTION",
+                "title": "Medical Validation Exception",
+                "reason": reason,
+                "filename": req.name or "New Health Track"
+            }
+        )
+
+    meta = document_parser_engine.extract_patient_metadata(req.text)
+    classification = clinical_engine.classify_specialty(req.text)
+
+    patient_name = req.name or meta.get("name") or "Family Member"
+    patient_spec = req.specialty or classification.get("top_specialty") or "General Medicine"
+    rel_clean = req.relationship or "Family Member"
+    t_name = req.track_name or f"{patient_name} ({rel_clean}) - {patient_spec} Track"
+
+    track_dict = {
+        "name": patient_name,
+        "age": req.age or meta.get("age") or 45,
+        "gender": req.gender or meta.get("gender") or "M/F",
+        "specialty": patient_spec,
+        "ward": "Ambulatory Health Monitor",
+        "room": "Home Health Record",
+        "triage": "Serial Care Track",
+        "track_name": t_name,
+        "relationship": rel_clean,
+        "registered_at": time.strftime("%Y-%m-%d"),
+        "baseline_report": {
+            "title": f"Initial Baseline Note: {patient_name}",
+            "date": time.strftime("%Y-%m-%d"),
+            "type": "Initial Diagnostic Encounter",
+            "text": req.text
+        },
+        "latest_report": None
+    }
+
+    created = patient_registry_engine.create_user_track(req.user_email, track_dict)
+    analysis = analyze_medical_document(AnalyzeRequest(
+        text=req.text,
+        patient_name=patient_name,
+        patient_id=created.get("id"),
+        age=created.get("age"),
+        gender=created.get("gender"),
+        ward=created.get("ward")
+    ))
+
+    return {
+        "message": f"New health track '{t_name}' created successfully.",
+        "track": created,
+        "analysis": analysis
+    }
+
+@app.post("/api/user/tracks/upload")
+async def upload_user_track(
+    file: UploadFile = File(...),
+    user_email: str = Form(...),
+    track_name: Optional[str] = Form(None),
+    relationship: Optional[str] = Form("Family Member"),
+    name: Optional[str] = Form(None),
+    age: Optional[str] = Form(None),
+    gender: Optional[str] = Form(None),
+    specialty: Optional[str] = Form(None)
+):
+    contents = await file.read()
+    try:
+        extracted_text = extract_text_from_file_bytes(contents, file.filename)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to parse document: {str(e)}")
+
+    if not extracted_text.strip():
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "NON_MEDICAL_DOCUMENT_EXCEPTION",
+                "title": "Medical Validation Exception: Empty Document",
+                "reason": "The uploaded file contains no readable text.",
+                "filename": file.filename
+            }
+        )
+
+    is_valid, reason = document_parser_engine.is_valid_medical_document(extracted_text)
+    if not is_valid:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "NON_MEDICAL_DOCUMENT_EXCEPTION",
+                "title": "Medical Validation Exception",
+                "reason": reason,
+                "filename": file.filename
+            }
+        )
+
+    meta = document_parser_engine.extract_patient_metadata(extracted_text)
+    classification = clinical_engine.classify_specialty(extracted_text)
+
+    patient_name = name or meta.get("name") or "Family Member"
+    patient_spec = specialty or classification.get("top_specialty") or "General Medicine"
+    rel_clean = relationship or "Family Member"
+    t_name = track_name or f"{patient_name} ({rel_clean}) - {patient_spec} Track"
+
+    track_dict = {
+        "name": patient_name,
+        "age": age or meta.get("age") or 45,
+        "gender": gender or meta.get("gender") or "M/F",
+        "specialty": patient_spec,
+        "ward": "Ambulatory Health Monitor",
+        "room": "Home Health Record",
+        "triage": "Serial Care Track",
+        "track_name": t_name,
+        "relationship": rel_clean,
+        "registered_at": time.strftime("%Y-%m-%d"),
+        "baseline_report": {
+            "title": f"Initial Baseline Note: {patient_name} ({file.filename})",
+            "date": time.strftime("%Y-%m-%d"),
+            "type": "Initial Diagnostic Encounter",
+            "text": extracted_text
+        },
+        "latest_report": None
+    }
+
+    created = patient_registry_engine.create_user_track(user_email, track_dict)
+    analysis = analyze_medical_document(AnalyzeRequest(
+        text=extracted_text,
+        patient_name=patient_name,
+        patient_id=created.get("id"),
+        age=created.get("age"),
+        gender=created.get("gender"),
+        ward=created.get("ward")
+    ))
+
+    return {
+        "message": f"New health track '{t_name}' created successfully.",
+        "track": created,
+        "analysis": analysis
+    }
+
+@app.post("/api/user/tracks/{track_id}/followup/upload")
+async def upload_track_followup(
+    track_id: str,
+    file: UploadFile = File(...),
+    title: Optional[str] = Form(None),
+    date: Optional[str] = Form(None)
+):
+    contents = await file.read()
+    try:
+        extracted_text = extract_text_from_file_bytes(contents, file.filename)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to parse document: {str(e)}")
+
+    if not extracted_text.strip():
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "NON_MEDICAL_DOCUMENT_EXCEPTION",
+                "title": "Medical Validation Exception: Empty Document",
+                "reason": "The uploaded follow-up file contains no readable text.",
+                "filename": file.filename
+            }
+        )
+
+    is_valid, reason = document_parser_engine.is_valid_medical_document(extracted_text)
+    if not is_valid:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "NON_MEDICAL_DOCUMENT_EXCEPTION",
+                "title": "Medical Validation Exception",
+                "reason": reason,
+                "filename": file.filename
+            }
+        )
+
+    updated = patient_registry_engine.add_followup_report(track_id, {
+        "title": title or f"Follow-Up Report: {file.filename}",
+        "date": date or time.strftime("%Y-%m-%d"),
+        "type": "Serial Follow-Up Recheck",
+        "text": extracted_text
+    })
+
+    if not updated:
+        raise HTTPException(status_code=404, detail=f"Track with ID {track_id} not found in registry.")
+
+    analysis = analyze_medical_document(AnalyzeRequest(
+        text=extracted_text,
+        patient_name=updated.get("name"),
+        patient_id=updated.get("id"),
+        age=updated.get("age"),
+        gender=updated.get("gender"),
+        ward=updated.get("ward")
+    ))
+
+    return {
+        "message": f"Follow-up report successfully attached to track {track_id}.",
+        "track": updated,
+        "trajectory": updated.get("longitudinal_trajectory"),
+        "analysis": analysis
+    }
 
 # -------------------------------------------------------------
 # Mount Production React Frontend (Single-Page Application)

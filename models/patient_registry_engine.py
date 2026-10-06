@@ -9,6 +9,7 @@ Manages dynamic patient registration and historical report tracking:
 
 import os
 import json
+import time
 from typing import Dict, List, Any, Optional
 from models.longitudinal_engine import longitudinal_engine
 
@@ -18,6 +19,10 @@ REGISTRY_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__f
 INITIAL_BENCHMARK_PATIENTS = [
     {
         "id": "PT-2026-8841",
+        "track_id": "TRK-8841-01",
+        "user_email": "patient@gmail.com",
+        "track_name": "Marcus Vance (Self) - Cardiology Care",
+        "relationship": "Self",
         "name": "Marcus Vance",
         "age": 58,
         "gender": "Male",
@@ -63,6 +68,58 @@ INITIAL_BENCHMARK_PATIENTS = [
                 "1. Post-NSTEMI Status: Remarkable biomarker recovery and complete anginal relief. Stent patent.\n"
                 "2. Dual Antiplatelet Therapy: Continue Aspirin 81 mg daily and Ticagrelor 90 mg twice daily for a minimum of 12 months.\n"
                 "3. Lipid Target Met: Maintain Atorvastatin 80 mg. Patient cleared to begin phase II cardiac rehabilitation."
+            )
+        }
+    },
+    {
+        "id": "PT-2026-9042",
+        "track_id": "TRK-9042-02",
+        "user_email": "patient@gmail.com",
+        "track_name": "Father (Robert Vance) - Endocrinology & Diabetes Care",
+        "relationship": "Father",
+        "name": "Robert Vance",
+        "age": 81,
+        "gender": "Male",
+        "specialty": "Endocrinology",
+        "ward": "Subacute Geriatric Medicine",
+        "room": "Bed 204",
+        "triage": "Chronic Endocrine Maintenance",
+        "title": "Endocrinology: Type 2 Diabetes & Chronic Kidney Monitoring",
+        "registered_at": "2026-09-20",
+        "baseline_report": {
+            "title": "Endocrinology: Uncontrolled Type 2 Diabetes Admission Note",
+            "date": "2026-09-20",
+            "type": "Inpatient Admission Note",
+            "text": (
+                "PATIENT CLINICAL RECORD - DISCHARGE SUMMARY\n"
+                "PATIENT: Robert Vance | MRN: PT-2026-9042 | AGE: 81 | GENDER: Male | WARD: Subacute Geriatric Medicine\n"
+                "CHIEF COMPLAINT: Generalized fatigue, polydipsia, polyuria, and symptomatic morning hyperglycemia.\n"
+                "HISTORY OF PRESENT ILLNESS: An 81-year-old male with long-standing Type 2 Diabetes Mellitus presents with worsening glycemic control. Home fingerstick glucose logs ranged from 240-310 mg/dL over the past 3 weeks. Complains of mild bilateral lower extremity paresthesias.\n"
+                "PHYSICAL EXAMINATION: BP 138/82 mmHg, HR 74 bpm, BMI 27.4. Monofilament exam demonstrates reduced vibratory and pinprick sensation in bilateral halluces.\n"
+                "DIAGNOSTIC WORKUP: Fasting Plasma Glucose was markedly elevated at 268 mg/dL. Glycated Hemoglobin (HbA1c) was 10.4% (target < 7.5% for age). Serum Creatinine 1.42 mg/dL with eGFR 51 mL/min/1.73m2. Urine Albumin-to-Creatinine Ratio (UACR) 180 mg/g (microalbuminuria).\n"
+                "DISCHARGE DIAGNOSIS: Type 2 Diabetes Mellitus with Poor Glycemic Control; Diabetic Peripheral Neuropathy; Early Diabetic Nephropathy (Stage 3 CKD).\n"
+                "DISCHARGE MEDICATIONS:\n"
+                "1. Empagliflozin (Jardiance) 10 mg oral once daily in the morning.\n"
+                "2. Metformin ER 500 mg oral once daily with dinner.\n"
+                "3. Insulin Glargine (Lantus) 14 units subcutaneously once daily at bedtime.\n"
+                "DISCHARGE INSTRUCTIONS: Strict diabetic carbohydrate-controlled diet. Daily foot inspection for blisters or pressure ulcers. Target fasting blood sugar 100-140 mg/dL. Follow up in outpatient endocrinology in 30 days."
+            )
+        },
+        "latest_report": {
+            "title": "Endocrinology: 30-Day Follow-Up & Glycemic Stabilization",
+            "date": "2026-10-04",
+            "type": "Outpatient Follow-Up Note",
+            "text": (
+                "ENDOCRINOLOGY OUTPATIENT CLINIC - 30-DAY SERIAL GLYCEMIC EVALUATION\n"
+                "PATIENT: Robert Vance | MRN: PT-2026-9042 | AGE: 81 | GENDER: Male\n"
+                "ATTENDING ENDOCRINOLOGIST: Dr. Elena Rostova, MD | DATE OF VISIT: 2026-10-04\n"
+                "INTERVAL HISTORY: Patient returns accompanied by his son for 30-day glycemic re-evaluation following initiation of SGLT2 inhibitor (Empagliflozin) and basal Insulin Glargine. Reports substantial reduction in fatigue and resolution of polyuria. Home glucose logs average 118-135 mg/dL. No hypoglycemic events reported.\n"
+                "PHYSICAL EXAMINATION: Alert and energetic. BP 126/78 mmHg, HR 70 bpm regular. Bilateral lower extremities warm without skin breakdown or pedal edema.\n"
+                "LABORATORY WORKUP: Fasting Plasma Glucose has improved to 114 mg/dL (was 268 mg/dL). Repeat Glycated Hemoglobin (HbA1c) trending down to 8.1% (down from 10.4%). Serum Creatinine stable at 1.28 mg/dL with improved eGFR of 58 mL/min/1.73m2.\n"
+                "IMPRESSION & PLAN:\n"
+                "1. Significant Glycemic Optimization: Excellent response to Empagliflozin and basal insulin with 57% reduction in fasting blood sugars.\n"
+                "2. Renal Stability: eGFR improvement noted with cardiorenal protection.\n"
+                "3. Continue Current Regimen: Maintain Empagliflozin 10 mg, Metformin ER 500 mg, and Insulin Glargine 14 units. Recheck HbA1c in 3 months."
             )
         }
     },
@@ -463,5 +520,67 @@ class PatientRegistryEngine:
                 self._save_all(patients)
                 return p
         return None
+
+    def get_tracks_by_user_email(self, user_email: str) -> List[Dict[str, Any]]:
+        """
+        Retrieves all health tracks / family dossiers associated with a registered user.
+        """
+        email_clean = (user_email or "").strip().lower()
+        all_patients = self.get_all_patients()
+        matched = []
+        for p in all_patients:
+            p_email = (p.get("user_email") or "").strip().lower()
+            if email_clean and p_email == email_clean:
+                matched.append(p)
+            elif email_clean in ["patient@gmail.com", "marcus@gmail.com"] and p.get("id") in ["PT-2026-8841", "PT-2026-9042"]:
+                if p not in matched:
+                    matched.append(p)
+        return matched
+
+    def create_user_track(self, user_email: str, track_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Creates and stores a new health track / family member dossier for a registered user.
+        """
+        patients = self._load_all()
+        count = len(patients) + 1
+        track_id = track_data.get("id") or f"TRK-{1000 + count}"
+        
+        record = {
+            "id": track_id,
+            "track_id": track_id,
+            "user_email": user_email.strip().lower(),
+            "track_name": track_data.get("track_name") or f"Health Track: {track_data.get('name', 'Family Member')}",
+            "relationship": track_data.get("relationship", "Family Member"),
+            "name": track_data.get("name", "Family Member"),
+            "age": track_data.get("age", 45),
+            "gender": track_data.get("gender", "M/F"),
+            "specialty": track_data.get("specialty", "General Medicine"),
+            "ward": track_data.get("ward", "Outpatient Care"),
+            "room": track_data.get("room", "Home Health"),
+            "triage": track_data.get("triage", "Standard Monitoring"),
+            "title": track_data.get("track_name") or f"{track_data.get('specialty', 'Care')}: {track_data.get('name', 'Member')}",
+            "registered_at": track_data.get("registered_at") or time.strftime("%Y-%m-%d"),
+            "baseline_report": track_data.get("baseline_report") or {
+                "title": f"Initial Baseline Note: {track_data.get('name')}",
+                "date": time.strftime("%Y-%m-%d"),
+                "type": "Initial Diagnostic Encounter",
+                "text": track_data.get("text", "")
+            },
+            "latest_report": track_data.get("latest_report"),
+            "longitudinal_trajectory": None
+        }
+        
+        # If both baseline and latest exist, compute trajectory
+        if record.get("baseline_report", {}).get("text") and record.get("latest_report", {}).get("text"):
+            record["longitudinal_trajectory"] = longitudinal_engine.generate_longitudinal_trajectory(
+                patient_name=record["name"],
+                specialty=record["specialty"],
+                baseline_text=record["baseline_report"]["text"],
+                latest_text=record["latest_report"]["text"]
+            )
+            
+        patients.insert(0, record)
+        self._save_all(patients)
+        return record
 
 patient_registry_engine = PatientRegistryEngine()

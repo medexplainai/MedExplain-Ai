@@ -19,6 +19,7 @@ import PatientDashboardView from './components/PatientDashboardView';
 import LongitudinalComparisonModal from './components/LongitudinalComparisonModal';
 import RegisterPatientModal from './components/RegisterPatientModal';
 import UploadFollowupModal from './components/UploadFollowupModal';
+import CreateTrackModal from './components/CreateTrackModal';
 import AboutUsSection from './components/AboutUsSection';
 import ReportQADrawer from './components/ReportQADrawer';
 
@@ -71,6 +72,11 @@ export default function App() {
   const [showAboutUsModal, setShowAboutUsModal] = useState(false);
   const [isQADrawerOpen, setIsQADrawerOpen] = useState(false);
 
+  // Multi-Track Family & Personal Dossier State
+  const [userTracks, setUserTracks] = useState([]);
+  const [activeTrack, setActiveTrack] = useState(null);
+  const [isCreateTrackModalOpen, setIsCreateTrackModalOpen] = useState(false);
+
   const [selectedCaseTitle, setSelectedCaseTitle] = useState('');
   const [activeTab, setActiveTab] = useState('tab_diagnostics');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -90,6 +96,20 @@ export default function App() {
     hash: null
   });
 
+  const fetchUserTracks = async (email) => {
+    if (!email) return [];
+    try {
+      const resp = await fetch(`/api/user/tracks?email=${encodeURIComponent(email)}`);
+      const data = await resp.json();
+      const tracks = data.tracks || [];
+      setUserTracks(tracks);
+      return tracks;
+    } catch (err) {
+      console.error('Failed to load user tracks:', err);
+      return [];
+    }
+  };
+
   const handleLogin = (user) => {
     setCurrentUser(user);
     try {
@@ -98,11 +118,29 @@ export default function App() {
     } catch {}
 
     if (user.role === 'patient') {
-      // Patient starts fresh with their own document intake screen
       setSelectedCaseTitle('');
       setAnalysisResult(null);
       setCurrentText('');
       setActivePatient(null);
+      fetchUserTracks(user.email).then((tracks) => {
+        if (tracks.length > 0) {
+          const defaultTrack = tracks[0];
+          setActiveTrack(defaultTrack);
+          setSelectedCaseTitle(defaultTrack.track_name || defaultTrack.name);
+          const hasFollowup = !!defaultTrack.latest_report;
+          setActiveReportType(hasFollowup ? 'latest' : 'baseline');
+          const targetReport = hasFollowup ? defaultTrack.latest_report : (defaultTrack.baseline_report || { text: defaultTrack.text });
+          analyzeText(targetReport?.text || defaultTrack.text, {
+            name: defaultTrack.name,
+            id: defaultTrack.id,
+            age: defaultTrack.age,
+            gender: defaultTrack.gender,
+            ward: defaultTrack.ward
+          });
+        } else {
+          setActiveTrack(null);
+        }
+      });
     } else {
       if (samples.length > 0) {
         const matchedCase = samples.find(s => (s.patient_name || s.name) === user.name) || samples[0];
@@ -127,13 +165,15 @@ export default function App() {
     setSelectedCaseTitle('');
     setCurrentText('');
     setActivePatient(null);
+    setUserTracks([]);
+    setActiveTrack(null);
     try {
       localStorage.removeItem('metrohealth_auth_user');
       localStorage.removeItem('metrohealth_user');
     } catch {}
   };
 
-  // Initial load: Fetch samples and initialize default case (for doctors only)
+  // Initial load: Fetch samples and initialize default case (for doctors) or tracks (for patients)
   useEffect(() => {
     async function loadInitial() {
       try {
@@ -142,7 +182,24 @@ export default function App() {
         const sampleList = data.samples || [];
         setSamples(sampleList);
 
-        if (sampleList.length > 0 && !analysisResult) {
+        if (currentUser?.role === 'patient') {
+          const tracks = await fetchUserTracks(currentUser.email);
+          if (tracks.length > 0 && !analysisResult) {
+            const defaultTrack = tracks[0];
+            setActiveTrack(defaultTrack);
+            setSelectedCaseTitle(defaultTrack.track_name || defaultTrack.name);
+            const hasFollowup = !!defaultTrack.latest_report;
+            setActiveReportType(hasFollowup ? 'latest' : 'baseline');
+            const targetReport = hasFollowup ? defaultTrack.latest_report : (defaultTrack.baseline_report || { text: defaultTrack.text });
+            analyzeText(targetReport?.text || defaultTrack.text, {
+              name: defaultTrack.name,
+              id: defaultTrack.id,
+              age: defaultTrack.age,
+              gender: defaultTrack.gender,
+              ward: defaultTrack.ward
+            });
+          }
+        } else if (sampleList.length > 0 && !analysisResult) {
           if (!currentUser || currentUser.role !== 'patient') {
             const defaultCase = sampleList[0];
             setActivePatient(defaultCase);
@@ -165,6 +222,64 @@ export default function App() {
     loadInitial();
   }, []);
 
+  const handleSelectTrack = (track) => {
+    setActiveTrack(track);
+    setSelectedCaseTitle(track.track_name || track.name);
+    const hasFollowup = !!track.latest_report;
+    setActiveReportType(hasFollowup ? 'latest' : 'baseline');
+    const targetReport = hasFollowup ? track.latest_report : (track.baseline_report || { text: track.text });
+    analyzeText(targetReport?.text || track.text, {
+      name: track.name,
+      id: track.id,
+      age: track.age,
+      gender: track.gender,
+      ward: track.ward
+    });
+  };
+
+  const handleTrackCreated = (newTrack, analysis) => {
+    fetchUserTracks(currentUser?.email);
+    setActiveTrack(newTrack);
+    setSelectedCaseTitle(newTrack.track_name || newTrack.name);
+    setActiveReportType('baseline');
+    if (analysis) {
+      setAnalysisResult(analysis);
+      setCurrentText(newTrack.baseline_report?.text || newTrack.text);
+    } else {
+      analyzeText(newTrack.baseline_report?.text || newTrack.text, {
+        name: newTrack.name,
+        id: newTrack.id,
+        age: newTrack.age,
+        gender: newTrack.gender,
+        ward: newTrack.ward
+      });
+    }
+  };
+
+  const handlePatientFollowupAdded = (updatedRecord, followupAnalysis) => {
+    if (currentUser?.role === 'patient') {
+      fetchUserTracks(currentUser?.email);
+      setActiveTrack(updatedRecord);
+      setActiveReportType('latest');
+      setSelectedCaseTitle(updatedRecord.latest_report?.title || `Latest Follow-Up: ${updatedRecord.name}`);
+      if (followupAnalysis) {
+        setAnalysisResult(followupAnalysis);
+        setCurrentText(updatedRecord.latest_report?.text);
+      } else {
+        analyzeText(updatedRecord.latest_report?.text, {
+          name: updatedRecord.name,
+          id: updatedRecord.id,
+          age: updatedRecord.age,
+          gender: updatedRecord.gender,
+          ward: updatedRecord.ward
+        });
+      }
+      setIsLongitudinalModalOpen(true);
+    } else {
+      handleFollowupAdded(updatedRecord);
+    }
+  };
+
   const handleDoctorSelectPatient = (patient) => {
     setViewScreen('workstation');
     setActivePatient(patient);
@@ -184,8 +299,33 @@ export default function App() {
   };
 
   const handleSwitchReportType = (type) => {
-    if (!activePatient) return;
     setActiveReportType(type);
+    if (currentUser?.role === 'patient' && activeTrack) {
+      if (type === 'latest' && activeTrack.latest_report?.text) {
+        setSelectedCaseTitle(activeTrack.latest_report.title || `Latest Follow-Up: ${activeTrack.name}`);
+        analyzeText(activeTrack.latest_report.text, {
+          name: activeTrack.name,
+          id: activeTrack.id,
+          age: activeTrack.age,
+          gender: activeTrack.gender,
+          ward: activeTrack.ward
+        });
+      } else {
+        const bRep = activeTrack.baseline_report;
+        const bText = bRep?.text || activeTrack.text;
+        setSelectedCaseTitle(bRep?.title || `Baseline Report: ${activeTrack.name}`);
+        analyzeText(bText, {
+          name: activeTrack.name,
+          id: activeTrack.id,
+          age: activeTrack.age,
+          gender: activeTrack.gender,
+          ward: activeTrack.ward
+        });
+      }
+      return;
+    }
+
+    if (!activePatient) return;
     if (type === 'latest' && activePatient.latest_report?.text) {
       const lRep = activePatient.latest_report;
       setSelectedCaseTitle(lRep.title || `Latest Follow-Up: ${activePatient.name || activePatient.patient_name}`);
@@ -366,10 +506,23 @@ export default function App() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const resp = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      });
+
+      let resp;
+      if (currentUser?.role === 'patient') {
+        formData.append('user_email', currentUser.email);
+        formData.append('relationship', 'Self');
+        formData.append('name', currentUser.name || 'Personal Record');
+        formData.append('track_name', `${currentUser.name || 'Personal'} (Self) - Health Track`);
+        resp = await fetch('/api/user/tracks/upload', {
+          method: 'POST',
+          body: formData
+        });
+      } else {
+        resp = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+      }
 
       if (!resp.ok) {
         const errJson = await resp.json().catch(() => ({}));
@@ -391,14 +544,23 @@ export default function App() {
       }
 
       const result = await resp.json();
-      setAnalysisResult(result);
-      setSelectedCaseTitle(`Uploaded: ${file.name}`);
-      setCurrentText(result.text || file.name);
+      if (currentUser?.role === 'patient' && result.track) {
+        fetchUserTracks(currentUser.email);
+        setActiveTrack(result.track);
+        setAnalysisResult(result.analysis);
+        setSelectedCaseTitle(result.track.track_name || `Uploaded: ${file.name}`);
+        setCurrentText(result.analysis?.text || result.track.baseline_report?.text || file.name);
+      } else {
+        setAnalysisResult(result);
+        setSelectedCaseTitle(`Uploaded: ${file.name}`);
+        setCurrentText(result.text || file.name);
+      }
 
-      if (result.document_type === 'Laboratory Test Report') {
+      const topSpec = result.analysis?.classification?.top_specialty || result.classification?.top_specialty;
+      if ((result.analysis?.document_type || result.document_type) === 'Laboratory Test Report') {
         setActiveOrganId('Pathology');
-      } else if (result.classification?.top_specialty) {
-        setActiveOrganId(result.classification.top_specialty);
+      } else if (topSpec) {
+        setActiveOrganId(topSpec);
       }
     } catch (err) {
       console.error('File upload analysis error:', err);
@@ -530,10 +692,145 @@ export default function App() {
               setCurrentText('');
             }}
             isAnalyzing={isAnalyzing}
+            userTracks={userTracks}
+            activeTrack={activeTrack}
+            onSelectTrack={handleSelectTrack}
+            onOpenCreateTrack={() => setIsCreateTrackModalOpen(true)}
+            onOpenUploadFollowup={() => setIsUploadFollowupModalOpen(true)}
+            onOpenLongitudinalModal={() => setIsLongitudinalModalOpen(true)}
+            activeReportType={activeReportType}
+            onSwitchReportType={handleSwitchReportType}
           />
           <CollegeTeamFooter onOpenAbout={() => setShowAboutUsModal(true)} />
         </main>
         <ClinicalPipelineLoader isAnalyzing={isAnalyzing} onComplete={() => {}} />
+
+        {/* Create New Health Track / Family Member Modal */}
+        <CreateTrackModal
+          isOpen={isCreateTrackModalOpen}
+          onClose={() => setIsCreateTrackModalOpen(false)}
+          currentUser={currentUser}
+          onTrackCreated={handleTrackCreated}
+        />
+
+        {/* Upload Follow-Up Report Modal for Patient */}
+        <UploadFollowupModal
+          isOpen={isUploadFollowupModalOpen}
+          onClose={() => setIsUploadFollowupModalOpen(false)}
+          patient={activeTrack || analysisResult?.patient}
+          onFollowupAdded={handlePatientFollowupAdded}
+        />
+
+        {/* Longitudinal Comparison Modal */}
+        <LongitudinalComparisonModal
+          isOpen={isLongitudinalModalOpen}
+          onClose={() => setIsLongitudinalModalOpen(false)}
+          patient={activeTrack}
+          activeReportType={activeReportType}
+          onSwitchReport={handleSwitchReportType}
+          onOpenUploadFollowup={() => setIsUploadFollowupModalOpen(true)}
+        />
+
+        {/* Floating Ask MedExplain AI Q&A Button */}
+        {analysisResult && (
+          <div className="no-print" style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9990 }}>
+            {!isQADrawerOpen && (
+              <button
+                onClick={() => setIsQADrawerOpen(true)}
+                style={{
+                  background: 'linear-gradient(135deg, #0f766e 0%, #0d9488 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '999px',
+                  padding: '12px 20px',
+                  fontSize: '13.5px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 8px 24px rgba(13, 148, 136, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.2)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <Sparkles size={17} />
+                <span>Ask MedExplain AI</span>
+                <span style={{
+                  background: 'rgba(255, 255, 255, 0.25)',
+                  fontSize: '10px',
+                  padding: '2px 7px',
+                  borderRadius: '999px',
+                  fontWeight: 800
+                }}>
+                  100% Grounded
+                </span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Grounded Clinical Q&A Slide-out Drawer */}
+        <ReportQADrawer
+          isOpen={isQADrawerOpen}
+          onClose={() => setIsQADrawerOpen(false)}
+          reportText={currentText}
+          patientData={analysisResult?.patient || activeTrack}
+          summaryData={analysisResult?.summary}
+          labResults={analysisResult?.lab_results || []}
+        />
+
+        {/* About Us (Academic Project Team-8) Modal Popup */}
+        {showAboutUsModal && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(15, 23, 42, 0.8)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '20px'
+          }}>
+            <div style={{
+              background: '#ffffff',
+              borderRadius: '20px',
+              maxWidth: '1000px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.3)',
+              position: 'relative',
+              padding: '28px 32px'
+            }}>
+              <button
+                onClick={() => setShowAboutUsModal(false)}
+                style={{
+                  position: 'absolute',
+                  top: '20px',
+                  right: '20px',
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  background: '#f1f5f9',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#475569',
+                  zIndex: 10
+                }}
+              >
+                <X size={20} />
+              </button>
+              <AboutUsSection />
+            </div>
+          </div>
+        )}
 
         {/* Medical Validation Exception Alert Modal for Patient Portal */}
         {uploadError && (

@@ -1,6 +1,10 @@
 [
   {
     "id": "PT-2026-8841",
+    "track_id": "TRK-8841-01",
+    "user_email": "patient@gmail.com",
+    "track_name": "Marcus Vance (Self) - Cardiology Care",
+    "relationship": "Self",
     "name": "Marcus Vance",
     "age": 58,
     "gender": "Male",
@@ -21,6 +25,34 @@
       "date": "2026-10-01",
       "type": "Outpatient Follow-Up Report",
       "text": "CARDIOLOGY OUTPATIENT CLINIC - DAY 14 POST-STENT EVALUATION\nPATIENT: Marcus Vance | MRN: PT-2026-8841 | AGE: 58 | GENDER: Male\nATTENDING PHYSICIAN: Dr. Sarah Jenkins, MD | DATE OF VISIT: 2026-10-01\nINTERVAL HISTORY: Patient returns for scheduled day-14 post-percutaneous coronary intervention (DES stent placement to LAD). He reports complete resolution of retrosternal chest pain and shortness of breath. No angina with walking 30 minutes daily. Adherent to dual antiplatelet therapy.\nPHYSICAL EXAMINATION: Alert, well-nourished male in no distress. Blood pressure 122/78 mmHg, resting heart rate 68 bpm regular, SpO2 98% on room air. Cardiac auscultation demonstrates normal S1 and S2 without gallop, rub, or murmurs. Bilateral lungs clear to auscultation.\nLABORATORY WORKUP: Serum Cardiac Troponin I has normalized to 0.03 ng/mL (reference < 0.04 ng/mL, down from 1.82 ng/mL). Repeat lipid panel demonstrates excellent response to Atorvastatin 80 mg: Total Cholesterol 142 mg/dL, LDL Cholesterol 78 mg/dL (was 154 mg/dL), Triglycerides 130 mg/dL.\nIMPRESSION & PLAN:\n1. Post-NSTEMI Status: Remarkable biomarker recovery and complete anginal relief. Stent patent.\n2. Dual Antiplatelet Therapy: Continue Aspirin 81 mg daily and Ticagrelor 90 mg twice daily for a minimum of 12 months.\n3. Lipid Target Met: Maintain Atorvastatin 80 mg. Patient cleared to begin phase II cardiac rehabilitation."
+    }
+  },
+  {
+    "id": "PT-2026-9042",
+    "track_id": "TRK-9042-02",
+    "user_email": "patient@gmail.com",
+    "track_name": "Father (Robert Vance) - Endocrinology & Diabetes Care",
+    "relationship": "Father",
+    "name": "Robert Vance",
+    "age": 81,
+    "gender": "Male",
+    "specialty": "Endocrinology",
+    "ward": "Subacute Geriatric Medicine",
+    "room": "Bed 204",
+    "triage": "Chronic Endocrine Maintenance",
+    "title": "Endocrinology: Type 2 Diabetes & Chronic Kidney Monitoring",
+    "registered_at": "2026-09-20",
+    "baseline_report": {
+      "title": "Endocrinology: Uncontrolled Type 2 Diabetes Admission Note",
+      "date": "2026-09-20",
+      "type": "Inpatient Admission Note",
+      "text": "PATIENT CLINICAL RECORD - DISCHARGE SUMMARY\nPATIENT: Robert Vance | MRN: PT-2026-9042 | AGE: 81 | GENDER: Male | WARD: Subacute Geriatric Medicine\nCHIEF COMPLAINT: Generalized fatigue, polydipsia, polyuria, and symptomatic morning hyperglycemia.\nHISTORY OF PRESENT ILLNESS: An 81-year-old male with long-standing Type 2 Diabetes Mellitus presents with worsening glycemic control. Home fingerstick glucose logs ranged from 240-310 mg/dL over the past 3 weeks. Complains of mild bilateral lower extremity paresthesias.\nPHYSICAL EXAMINATION: BP 138/82 mmHg, HR 74 bpm, BMI 27.4. Monofilament exam demonstrates reduced vibratory and pinprick sensation in bilateral halluces.\nDIAGNOSTIC WORKUP: Fasting Plasma Glucose was markedly elevated at 268 mg/dL. Glycated Hemoglobin (HbA1c) was 10.4% (target < 7.5% for age). Serum Creatinine 1.42 mg/dL with eGFR 51 mL/min/1.73m2. Urine Albumin-to-Creatinine Ratio (UACR) 180 mg/g (microalbuminuria).\nDISCHARGE DIAGNOSIS: Type 2 Diabetes Mellitus with Poor Glycemic Control; Diabetic Peripheral Neuropathy; Early Diabetic Nephropathy (Stage 3 CKD).\nDISCHARGE MEDICATIONS:\n1. Empagliflozin (Jardiance) 10 mg oral once daily in the morning.\n2. Metformin ER 500 mg oral once daily with dinner.\n3. Insulin Glargine (Lantus) 14 units subcutaneously once daily at bedtime.\nDISCHARGE INSTRUCTIONS: Strict diabetic carbohydrate-controlled diet. Daily foot inspection for blisters or pressure ulcers. Target fasting blood sugar 100-140 mg/dL. Follow up in outpatient endocrinology in 30 days."
+    },
+    "latest_report": {
+      "title": "Endocrinology: 30-Day Follow-Up & Glycemic Stabilization",
+      "date": "2026-10-04",
+      "type": "Outpatient Follow-Up Note",
+      "text": "ENDOCRINOLOGY OUTPATIENT CLINIC - 30-DAY SERIAL GLYCEMIC EVALUATION\nPATIENT: Robert Vance | MRN: PT-2026-9042 | AGE: 81 | GENDER: Male\nATTENDING ENDOCRINOLOGIST: Dr. Elena Rostova, MD | DATE OF VISIT: 2026-10-04\nINTERVAL HISTORY: Patient returns accompanied by his son for 30-day glycemic re-evaluation following initiation of SGLT2 inhibitor (Empagliflozin) and basal Insulin Glargine. Reports substantial reduction in fatigue and resolution of polyuria. Home glucose logs average 118-135 mg/dL. No hypoglycemic events reported.\nPHYSICAL EXAMINATION: Alert and energetic. BP 126/78 mmHg, HR 70 bpm regular. Bilateral lower extremities warm without skin breakdown or pedal edema.\nLABORATORY WORKUP: Fasting Plasma Glucose has improved to 114 mg/dL (was 268 mg/dL). Repeat Glycated Hemoglobin (HbA1c) trending down to 8.1% (down from 10.4%). Serum Creatinine stable at 1.28 mg/dL with improved eGFR of 58 mL/min/1.73m2.\nIMPRESSION & PLAN:\n1. Significant Glycemic Optimization: Excellent response to Empagliflozin and basal insulin with 57% reduction in fasting blood sugars.\n2. Renal Stability: eGFR improvement noted with cardiorenal protection.\n3. Continue Current Regimen: Maintain Empagliflozin 10 mg, Metformin ER 500 mg, and Insulin Glargine 14 units. Recheck HbA1c in 3 months."
     }
   },
   {
