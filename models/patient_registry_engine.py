@@ -509,7 +509,7 @@ class PatientRegistryEngine:
                     "text": followup_data.get("text", "")
                 }
                 # Recalculate longitudinal trajectory
-                b_text = p.get("baseline_report", {}).get("text", p.get("text", ""))
+                b_text = (p.get("baseline_report") or {}).get("text") or p.get("text", "")
                 l_text = p["latest_report"]["text"]
                 p["longitudinal_trajectory"] = longitudinal_engine.generate_longitudinal_trajectory(
                     patient_name=p["name"],
@@ -571,12 +571,14 @@ class PatientRegistryEngine:
         }
         
         # If both baseline and latest exist, compute trajectory
-        if record.get("baseline_report", {}).get("text") and record.get("latest_report", {}).get("text"):
+        b_txt = (record.get("baseline_report") or {}).get("text")
+        l_txt = (record.get("latest_report") or {}).get("text")
+        if b_txt and l_txt:
             record["longitudinal_trajectory"] = longitudinal_engine.generate_longitudinal_trajectory(
                 patient_name=record["name"],
                 specialty=record["specialty"],
-                baseline_text=record["baseline_report"]["text"],
-                latest_text=record["latest_report"]["text"]
+                baseline_text=b_txt,
+                latest_text=l_txt
             )
             
         patients.insert(0, record)

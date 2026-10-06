@@ -1,5 +1,59 @@
 [
   {
+    "id": "TRK-1008",
+    "track_id": "TRK-1008",
+    "user_email": "patient@gmail.com",
+    "track_name": "Liam Vance (Child) - Pediatric Asthma Track",
+    "relationship": "Child",
+    "name": "Liam Vance",
+    "age": 8,
+    "gender": "Male",
+    "specialty": "Pediatrics & Pulmonology",
+    "ward": "Ambulatory Health Monitor",
+    "room": "Home Health Record",
+    "triage": "Serial Care Track",
+    "title": "Liam Vance (Child) - Pediatric Asthma Track",
+    "registered_at": "2026-10-06",
+    "baseline_report": {
+      "title": "Initial Baseline Note: Liam Vance",
+      "date": "2026-10-06",
+      "type": "Initial Diagnostic Encounter",
+      "text": "PEDIATRIC OUTPATIENT CLINICAL ENCOUNTER\nPATIENT: Liam Vance | AGE: 8 | GENDER: Male | RELATION: Son\nCHIEF COMPLAINT: Recurrent nighttime cough and exercise-induced wheezing.\nPHYSICAL EXAMINATION: Bilateral expiratory wheezes on chest auscultation. SpO2 96% on ambient air.\nDIAGNOSIS: Mild Persistent Pediatric Asthma.\nMEDICATIONS:\n1. Albuterol HFA (ProAir) 90 mcg 2 puffs inhaled every 4-6 hours PRN wheezing or prior to exercise.\n2. Fluticasone propionate (Flovent) 44 mcg 2 puffs inhaled twice daily with spacer.\nDISCHARGE PLAN: Return in 4 weeks for pediatric asthma control reassessment."
+    },
+    "latest_report": {
+      "title": "Liam Vance: 4-Week Asthma Control Follow-Up",
+      "date": "2026-10-06",
+      "type": "Serial Follow-Up Recheck",
+      "text": "PEDIATRIC CLINIC 4-WEEK FOLLOW-UP EVALUATION\nPATIENT: Liam Vance | AGE: 8 | GENDER: Male\nINTERVAL HISTORY: 4-week follow-up for mild persistent asthma on daily inhaled fluticasone.\nMother reports night cough has completely resolved. No daytime wheezing or limitation of activities.\nPHYSICAL EXAMINATION: Lungs clear to auscultation bilaterally. No wheezing or rhonchi. SpO2 99%.\nPEAK EXPIRATORY FLOW RATE (PEFR): 210 L/min (improved from 160 L/min baseline, +31% improvement).\nIMPRESSION & PLAN:\n1. Well-controlled pediatric asthma on current low-dose inhaled corticosteroid controller.\n2. Continue Fluticasone 44 mcg 2 puffs twice daily. Keep Albuterol available for exercise prophylaxis."
+    },
+    "longitudinal_trajectory": {
+      "patient_name": "Liam Vance",
+      "specialty": "Pediatrics & Pulmonology",
+      "overall_status": "Significant Clinical Improvement",
+      "trajectory_badge": "IMPROVED",
+      "badge_color": "#10b981",
+      "improved_count": 1,
+      "worsened_count": 0,
+      "stable_count": 0,
+      "total_metrics_evaluated": 1,
+      "metrics": [
+        {
+          "key": "spo2",
+          "name": "SpO2 (Oxygen Saturation)",
+          "category": "Vital Signs",
+          "unit": "%",
+          "baseline_display": "96%",
+          "latest_display": "99%",
+          "delta_display": "+3 % (+3.1%)",
+          "status": "IMPROVED",
+          "status_label": "Increased favorably (+3.1%)",
+          "color": "#10b981"
+        }
+      ],
+      "clinical_narrative": "Serial evaluation of Liam Vance demonstrates a significant clinical improvement relative to baseline admission. Favorable clinical resolution observed across 1 parameters, including SpO2 (Oxygen Saturation). No adverse biomarker deterioration detected across evaluated clinical targets."
+    }
+  },
+  {
     "id": "PT-2026-8841",
     "track_id": "TRK-8841-01",
     "user_email": "patient@gmail.com",
